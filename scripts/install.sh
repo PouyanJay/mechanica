@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# scripts/install.sh — one-command dev environment setup for Mechanica.
+# scripts/install.sh: one-command dev environment setup for Mechanica.
 #
 # Wired to `make setup`. Idempotent: checks state before acting, skips what is
 # already in place, and re-runs `npm ci` only when package-lock.json changed.
@@ -62,7 +62,7 @@ mkdir -p "$STATE_DIR"
 lock_hash="$(shasum -a 256 package-lock.json | awk '{print $1}')"
 
 if [ -d node_modules ] && [ -f "$STAMP" ] && [ "$(cat "$STAMP")" = "$lock_hash" ]; then
-  ui::skip "npm ci — node_modules already matches package-lock.json"
+  ui::skip "npm ci: node_modules already matches package-lock.json"
   deps_status="up to date"
 else
   if ui::run "npm ci (clean install from package-lock.json)" "npm ci"; then

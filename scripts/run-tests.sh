@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# scripts/run-tests.sh — run any or all Mechanica test suites.
+# scripts/run-tests.sh: run any or all Mechanica test suites.
 #
 # Wired to `make test` / `make test-engines` / `make test-ui`.
 #
@@ -73,7 +73,7 @@ if [ "$run_ui" -eq 1 ]; then
   step=$((step + 1))
   ui::step "$step" "$total" "Rendered HTML + UI component tests"
   if [ "$build_result" = "FAIL" ]; then
-    ui::skip "skipped — the build they test against failed"
+    ui::skip "skipped: the build they test against failed"
     ui_result="skipped (build failed)"
   elif ui::run "node --test tests/*.test.mjs" \
     "node --test tests/rendered-html.test.mjs tests/ui-components.test.mjs"; then

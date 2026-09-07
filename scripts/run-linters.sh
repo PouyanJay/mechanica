@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# scripts/run-linters.sh — run code quality tools for Mechanica.
+# scripts/run-linters.sh: run code quality tools for Mechanica.
 #
 # Wired to `make lint` / `make lint-fix`.
 #

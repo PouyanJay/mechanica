@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# scripts/lib/ui.sh — shared output library for Mechanica scripts.
+# scripts/lib/ui.sh: shared output library for Mechanica scripts.
 #
 # Provides a consistent visual language for every Makefile-dispatched script:
 # a block-letter MECHANICA banner with a crankshaft-and-gear motif, coloured
@@ -26,10 +26,10 @@
 #   ui::summary_end
 #
 # Respect:
-#   NO_COLOR=1       — disable all ANSI colour
-#   FORCE_COLOR=1    — force colour even when not a TTY
-#   TERM=dumb        — disable colour (terminal does not support it)
-#   non-TTY stdout   — disable colour AND spinner; show plain text
+#   NO_COLOR=1       disables all ANSI colour
+#   FORCE_COLOR=1    forces colour even when not a TTY
+#   TERM=dumb        disables colour (terminal does not support it)
+#   non-TTY stdout   disables colour AND spinner; shows plain text
 
 # --- Guard against double-sourcing -------------------------------------------
 if [ -n "${_MECHANICA_UI_SH_LOADED:-}" ]; then
@@ -105,7 +105,7 @@ UI_BANNER_WIDTH=72
 
 # --- Internal helpers -------------------------------------------------------
 
-# ui::_repeat_char "char" N — emit N copies of "char". Bash 3.2 safe.
+# ui::_repeat_char "char" N: emit N copies of "char". Bash 3.2 safe.
 ui::_repeat_char() {
   local char="$1"
   local count="$2"
@@ -118,7 +118,7 @@ ui::_repeat_char() {
   printf "%s" "$out"
 }
 
-# ui::_truncate "text" max — truncate with ellipsis if longer than max chars.
+# ui::_truncate "text" max: truncate with ellipsis if longer than max chars.
 ui::_truncate() {
   local text="$1"
   local max="$2"
@@ -135,7 +135,7 @@ ui::_truncate() {
 
 # --- Initialization & cleanup -----------------------------------------------
 
-# ui::init — install traps that stop any running spinner on exit/interrupt.
+# ui::init: install traps that stop any running spinner on exit/interrupt.
 # Call this once at the top of every script that uses ui::run.
 ui::init() {
   trap 'ui::_spinner_stop' EXIT
@@ -145,7 +145,7 @@ ui::init() {
 
 # --- Banner ------------------------------------------------------------------
 
-# ui::_logo — print the MECHANICA block-letter wordmark over a
+# ui::_logo: print the MECHANICA block-letter wordmark over a
 # crankshaft-and-gear motif (cyan). Falls back to a plain ruled title on
 # terminals without UTF-8 so CI logs stay legible.
 ui::_logo() {
@@ -168,7 +168,7 @@ ui::_logo() {
     "${UI_DIM}" "${UI_RESET}"
 }
 
-# ui::banner "subtitle" ["context line"] — printed once at script start.
+# ui::banner "subtitle" ["context line"]: printed once at script start.
 # Renders the MECHANICA wordmark, then a status line:
 #
 #   <MECHANICA block art>
@@ -193,19 +193,19 @@ ui::banner() {
 
 # --- Headers & sections ------------------------------------------------------
 
-# ui::section "Title" — dim/bold section header for grouping output.
+# ui::section "Title": dim/bold section header for grouping output.
 ui::section() {
   printf "\n  %s%s%s\n" "${UI_BOLD}${UI_DIM}" "$1" "${UI_RESET}"
 }
 
-# ui::cmd "make foo" "description" — formatted command-reference line.
+# ui::cmd "make foo" "description": formatted command-reference line.
 ui::cmd() {
   printf "    %s%-24s%s %s%s%s\n" \
     "${UI_PRIMARY}" "$1" "${UI_RESET}" \
     "${UI_DIM}" "$2" "${UI_RESET}"
 }
 
-# ui::step <current> <total> "description" — numbered progress step. Status
+# ui::step <current> <total> "description": numbered progress step. Status
 # lines (ok/warn/fail/skip/info) printed afterwards nest visually beneath it.
 ui::step() {
   printf "\n%s%s %s/%s%s %s%s%s\n" \
@@ -222,13 +222,13 @@ ui::warn() { printf "  %s%s%s %s\n" "${UI_WARN}"    "${UI_ICON_WARN}" "${UI_RESE
 ui::info() { printf "  %s%s%s %s\n" "${UI_PRIMARY}" "${UI_ICON_INFO}" "${UI_RESET}" "$1"; }
 ui::skip() { printf "  %s%s %s%s\n"  "${UI_DIM}"    "${UI_ICON_SKIP}" "$1" "${UI_RESET}"; }
 
-# ui::hint "remediation text" — extra-indented secondary line under a status,
+# ui::hint "remediation text": extra-indented secondary line under a status,
 # using the arrow icon (→) to signal "next step / how to fix".
 ui::hint() {
   printf "    %s%s %s%s\n" "${UI_DIM}" "${UI_ICON_ARROW}" "$1" "${UI_RESET}"
 }
 
-# ui::detail "text" [max] — indented informational sub-line under a status, for
+# ui::detail "text" [max]: indented informational sub-line under a status, for
 # parent/child display (the ✔ line names the check, the detail names the
 # version). Auto-truncates so verbose output stays inside the column.
 ui::detail() {
@@ -238,7 +238,7 @@ ui::detail() {
   printf "      %s%s%s\n" "${UI_DIM}" "$text" "${UI_RESET}"
 }
 
-# ui::die "message" ["remediation hint"] — print fail + optional hint, exit 1.
+# ui::die "message" ["remediation hint"]: print fail + optional hint, exit 1.
 ui::die() {
   ui::fail "$1"
   [ -n "${2:-}" ] && ui::hint "$2"
@@ -247,7 +247,7 @@ ui::die() {
 
 # --- Spinner -----------------------------------------------------------------
 
-# ui::_spinner_start "message" — animated spinner in the background.
+# ui::_spinner_start "message": animated spinner in the background.
 # No-op on non-TTY (prints message inline instead).
 ui::_spinner_start() {
   local msg="$1"
@@ -276,7 +276,7 @@ ui::_spinner_start() {
   disown 2>/dev/null || true
 }
 
-# ui::_spinner_stop — stops the spinner and clears its line. Idempotent.
+# ui::_spinner_stop: stops the spinner and clears its line. Idempotent.
 ui::_spinner_stop() {
   if [ -n "${UI_SPINNER_PID:-}" ]; then
     kill "$UI_SPINNER_PID" >/dev/null 2>&1 || true
@@ -290,10 +290,10 @@ ui::_spinner_stop() {
 
 # --- Command executor --------------------------------------------------------
 
-# ui::run "label" "command" — execute command with a spinner. On success,
+# ui::run "label" "command": execute command with a spinner. On success,
 # prints ✔ label. On failure, prints ✖ label and a confined "failure card"
 # showing only the last N lines of captured output (full log retained on
-# disk). Returns the command's exit code; does NOT exit the parent script —
+# disk). Returns the command's exit code; does NOT exit the parent script;
 # callers decide whether the failure is fatal.
 ui::run() {
   local msg="$1"
@@ -318,7 +318,7 @@ ui::run() {
   return "$exit_code"
 }
 
-# ui::_failure_card "logfile" [tail_n] — render a bordered card under a failed
+# ui::_failure_card "logfile" [tail_n]: render a bordered card under a failed
 # step showing the last N lines of captured output, with a reference to the
 # full log. Confines multi-hundred-line stack traces to a bounded region so a
 # failure reads as one tidy block, not a screen-dump.
@@ -358,7 +358,7 @@ ui::_failure_card() {
 
 # --- Summary dashboard -------------------------------------------------------
 
-# ui::summary_begin "Title" — opens a summary table.
+# ui::summary_begin "Title": opens a summary table.
 ui::summary_begin() {
   printf "\n  %s%s%s\n" "${UI_BOLD}${UI_DIM}" "$1" "${UI_RESET}"
   printf "  %s%s%s\n" \
@@ -388,7 +388,7 @@ ui::summary_row() {
     "${UI_DIM}" "$value" "${UI_RESET}"
 }
 
-# ui::summary_end — closes the summary table.
+# ui::summary_end: closes the summary table.
 ui::summary_end() {
   printf "  %s%s%s\n\n" \
     "${UI_DIM}" "──────────────────────────────────────────────" "${UI_RESET}"

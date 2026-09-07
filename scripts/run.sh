@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# scripts/run.sh — start/stop the Mechanica dev server (Vite + Cloudflare
+# scripts/run.sh: start/stop the Mechanica dev server (Vite + Cloudflare
 # worker via vinext).
 #
 # Wired to `make start` / `make stop` / `make logs` / `make clean`.
@@ -35,7 +35,7 @@ usage() {
   echo ""
 }
 
-# kill_tree <pid> — kill a process and all of its descendants, children first.
+# kill_tree <pid>: kill a process and all of its descendants, children first.
 # npm spawns vite, which spawns workerd; killing only the root leaks orphans.
 kill_tree() {
   local pid="$1"
@@ -46,10 +46,10 @@ kill_tree() {
   kill "$pid" >/dev/null 2>&1 || true
 }
 
-# find_free_port — first port from BASE_PORT upward with no listener on ANY
+# find_free_port: first port from BASE_PORT upward with no listener on ANY
 # interface. Vite only auto-increments when its own bind fails, but our config
 # binds 0.0.0.0, which coexists with another server bound to 127.0.0.1 on the
-# same port — both "start", and localhost traffic goes to the other server.
+# same port; both "start", and localhost traffic goes to the other server.
 # So we pick the port ourselves and hold vite to it with --strictPort.
 find_free_port() {
   local port="$BASE_PORT"
@@ -63,7 +63,7 @@ find_free_port() {
   printf "%s" "$port"
 }
 
-# stop_server — returns 0 if a running server was stopped, 1 if none was.
+# stop_server: returns 0 if a running server was stopped, 1 if none was.
 stop_server() {
   local pid
   if [ ! -f "$PID_FILE" ]; then
@@ -117,7 +117,7 @@ do_clean() {
   ui::step 2 2 "Remove artefacts"
   rm -rf dist .wrangler "$STATE_DIR"
   ui::ok "removed dist, .wrangler, $STATE_DIR"
-  ui::hint "node_modules kept — remove manually if you want a from-scratch setup"
+  ui::hint "node_modules kept; remove manually if you want a from-scratch setup"
   echo ""
 }
 
@@ -143,7 +143,7 @@ do_start() {
       "free some ports or set MECHANICA_PORT"
   fi
   if [ "$port" -ne "$BASE_PORT" ]; then
-    ui::info "port $BASE_PORT is taken — switched to $port automatically"
+    ui::info "port $BASE_PORT is taken, switched to $port automatically"
   fi
   mkdir -p "$STATE_DIR"
   : >"$LOG_FILE"
@@ -178,7 +178,7 @@ do_start() {
   if ! curl -sf -o /dev/null --max-time 2 "$url"; then
     ui::fail "dev server did not become ready within ${READY_TIMEOUT}s"
     ui::_failure_card "$LOG_FILE" 15
-    ui::hint "it may still be compiling — check: make logs"
+    ui::hint "it may still be compiling; check: make logs"
     exit 1
   fi
 

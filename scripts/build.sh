@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# scripts/build.sh — compile the production bundle (browser assets + worker).
+# scripts/build.sh: compile the production bundle (browser assets + worker).
 #
 # Wired to `make build`. Output lands in dist/.
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# scripts/help.sh — render the formatted `make help` reference.
+# scripts/help.sh: render the formatted `make help` reference.
 #
 # Wired by the Makefile's default `help` target. Lists every target the
 # Makefile defines; keep it in sync whenever a target is added or removed.
@@ -9,7 +9,7 @@ set -euo pipefail
 source "$(dirname "$0")/lib/ui.sh"
 
 ui::_logo
-printf "\n  %s%smechanica%s %s— make targets · interactive 3D atlas of seven engines%s\n" \
+printf "\n  %s%smechanica%s %s· make targets · interactive 3D atlas of seven engines%s\n" \
   "${UI_BOLD}" "${UI_PRIMARY}" "${UI_RESET}" \
   "${UI_DIM}" "${UI_RESET}"
 
@@ -17,7 +17,7 @@ ui::section "Help"
 ui::cmd "make help"          "Print this command reference (default)"
 
 ui::section "Setup & Run"
-ui::cmd "make setup"         "Install dev dependencies (node check + npm ci) — idempotent"
+ui::cmd "make setup"         "Install dev dependencies (node check + npm ci), idempotent"
 ui::cmd "make start"         "Start the dev server (background, health-gated, prints URL)"
 ui::cmd "make run"           "Bulletproof end-to-end: setup + start"
 ui::cmd "make stop"          "Stop the dev server"

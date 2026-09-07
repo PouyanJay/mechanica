@@ -1,6 +1,6 @@
 # Mechanica Makefile
 #
-# Thin dispatcher only — every target is a one-liner that invokes a script in
+# Thin dispatcher only: every target is a one-liner that invokes a script in
 # scripts/. Logic lives there; see scripts/lib/ui.sh for the shared output
 # library. Run `make help` (or just `make`) for the command reference.
 
