@@ -40,3 +40,6 @@ next-env.d.ts
 /.sites-runtime/
 /outputs/
 /work/
+
+# make run state (pids, logs, install stamps)
+/.run-state/
