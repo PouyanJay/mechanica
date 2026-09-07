@@ -1,0 +1,6 @@
+interface:
+  display_name: "Engine Models"
+  short_description: "Extend engine geometry and mechanical motion"
+  default_prompt: "Use $engine-models to work on the requested Engine Atlas change."
+policy:
+  allow_implicit_invocation: true

@@ -1,0 +1,6 @@
+interface:
+  display_name: "Engine Separation"
+  short_description: "Refine continuous disassembly and reassembly"
+  default_prompt: "Use $engine-explosion to work on the requested Engine Atlas change."
+policy:
+  allow_implicit_invocation: true

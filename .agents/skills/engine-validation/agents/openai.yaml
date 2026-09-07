@@ -1,0 +1,6 @@
+interface:
+  display_name: "Engine Validation"
+  short_description: "Check models, builds, and source handoffs"
+  default_prompt: "Use $engine-validation to work on the requested Engine Atlas change."
+policy:
+  allow_implicit_invocation: true

@@ -1,0 +1,54 @@
+export type EngineType = 'turbofan' | 'turbojet' | 'turboprop' | 'turboshaft' | 'v8' | 'inline4' | 'rotary';
+export const ENGINES = {
+ turbofan: {name:'Turbofan', subtitle:'High-bypass · Two-spool', code:'TF-01',family:'Aircraft turbines',category:'AEROSPACE',flow:true, description:'A large fan moves air through two paths: the core and the surrounding bypass duct. Concentric shafts connect the turbines to the fan and compressor.'},
+ turbojet: {name:'Turbojet', subtitle:'Axial-flow · Single-spool', code:'TJ-02',family:'Aircraft turbines',category:'AEROSPACE',flow:true, description:'All intake air passes through the core. The compressor, combustor and turbine supply a high-speed exhaust jet through the nozzle.'}
+ ,turboprop:{name:'Turboprop',subtitle:'Propeller drive · Reduction gearbox',code:'TP-03',family:'Aircraft turbines',category:'AEROSPACE',flow:true,description:'A gas generator and power turbine drive a propeller through reduction gearing. The propeller provides most of the thrust.'}
+ ,turboshaft:{name:'Turboshaft',subtitle:'Free power turbine · Shaft output',code:'TS-04',family:'Aircraft turbines',category:'AEROSPACE',flow:true,description:'A gas generator supplies a free power turbine. A geared output shaft delivers mechanical power to an external load.'}
+ ,v8:{name:'V8',subtitle:'90° V · Cross-plane crankshaft',code:'V8-05',family:'Piston engines',category:'RECIPROCATING',flow:false,description:'Two banks of four pistons share a cross-plane crankshaft. Connecting rods turn reciprocating piston motion into shaft rotation.'}
+ ,inline4:{name:'Inline-four',subtitle:'Four cylinders · Double overhead cam',code:'I4-06',family:'Piston engines',category:'RECIPROCATING',flow:false,description:'Four cylinders in one bank drive a common crankshaft. The outer pistons move together, opposite the middle pair.'}
+ ,rotary:{name:'Wankel rotary',subtitle:'Single rotor · Eccentric shaft',code:'RE-07',family:'Rotary engines',category:'ROTARY',flow:false,description:'A three-apex rotor moves inside a two-lobed housing. The eccentric output shaft makes three turns for each rotor revolution.'}
+};
+export const PARTS = [
+ {id:'fan', name:'Fan & inlet', short:'Fan', color:'#82c7df', number:'01', role:'Accelerate incoming air', description:'The fan moves a large volume of air. A portion enters the engine core; the remainder travels through the bypass duct and contributes to thrust.', material:'Titanium-alloy reference', relation:'Driven by the low-pressure turbine', x:-3.1},
+ {id:'compressor', name:'Axial compressor', short:'Compressor', color:'#9cb3d6', number:'02', role:'Raise air pressure', description:'Alternating rows of rotating blades and stationary vanes progressively compress the core airflow before it reaches the combustor.', material:'Titanium / nickel-alloy reference', relation:'Connected to the turbine by a shaft', x:-.6},
+ {id:'combustor', name:'Annular combustor', short:'Combustor', color:'#e9a46e', number:'03', role:'Add thermal energy', description:'Fuel burns in a continuous annular chamber. Air entering through the liner supports combustion and helps cool and dilute the hot gases.', material:'Nickel-alloy liner reference', relation:'Between compressor and turbine', x:1.55},
+ {id:'turbine', name:'Turbine stages', short:'Turbine', color:'#c4a590', number:'04', role:'Extract shaft power', description:'Hot gas expands through stationary vanes and rotating turbine blades. The extracted power drives the compressor and, in a turbofan, the fan.', material:'Nickel-superalloy reference', relation:'Powers the upstream rotating assemblies', x:2.95},
+ {id:'nozzle', name:'Exhaust nozzle', short:'Exhaust', color:'#9db6b6', number:'05', role:'Accelerate the exhaust', description:'The exhaust duct and nozzle guide the remaining gas energy into a rearward jet. This momentum change contributes to engine thrust.', material:'Heat-resistant alloy reference', relation:'Downstream of the turbine', x:4.45},
+ {id:'casing', name:'Casing & bypass', short:'Casing', color:'#b8c1ca', number:'06', role:'Enclose the flow paths', description:'The casing supports stationary components. In a turbofan, the outer duct carries bypass air around the core, keeping it separate from combustion gases.', material:'Metal / composite reference', relation:'Surrounds the engine assemblies', x:0},
+ {id:'shaft', name:'Shafts & bearings', short:'Shafts', color:'#c1c49f', number:'07', role:'Transfer mechanical power', description:'Shafts transmit torque between turbine and compressor. This turbofan reference uses concentric low- and high-pressure shafts; bearings support their rotation.', material:'High-strength steel reference', relation:'Links turbine to compressor and fan', x:0}
+];
+export type PartId = typeof PARTS[number]['id'];
+export type ViewerState = { engine:EngineType; mode:string; explode:number; explodeLayout:'radial'|'inventory'; spacing:number; cycling:boolean; selectedPiece:string|null; isolatedPiece:string|null; section:number; playing:boolean; speed:number; flow:boolean; labels:boolean; hidden:string[]; selected:string|null; isolated:string|null; quality:string; camera:string; reset:number; zoom:number };
+
+export type EnginePart = {id:string;name:string;short:string;color:string;number:string;role:string;description:string;material:string;relation:string;x:number};
+const makePart=(id:string,name:string,short:string,role:string,description:string,material:string,x=0):EnginePart=>({id,name,short,role,description,material,relation:'',x,number:'',color:'#b3c4d2'});
+const PISTON_PARTS:EnginePart[]=[
+ makePart('block','Cylinder block','Block','Guide and support the pistons','The machined bores guide each piston. The block also supports the crankshaft and cylinder heads. Cutaway removes the upper casting to expose the mechanism.','Cast alloy reference'),
+ makePart('pistons','Pistons & rings','Pistons','Receive combustion force','Each piston moves along its cylinder axis. Separate compression and oil-ring pieces seal the bore and help control oil on the cylinder wall.','Aluminum / steel reference'),
+ makePart('rods','Connecting rods','Rods','Link pistons to crankpins','A connecting rod pivots at the piston pin and crankpin. Its length constrains the piston position as the crankshaft rotates.','Forged steel reference'),
+ makePart('crankshaft','Crankshaft & flywheel','Crankshaft','Convert motion into torque','Offset crankpins and counterweights rotate around the main bearing axis. The flywheel smooths variation in rotational speed.','Forged steel reference'),
+ makePart('heads','Cylinder heads','Heads','Close the combustion chambers','The cylinder heads contain valve seats and spark plugs. These illustrative heads use two valves per cylinder.','Cast aluminum reference'),
+ makePart('valvetrain','Camshafts & valves','Valvetrain','Time intake and exhaust','Camshafts rotate at half crankshaft speed in a four-stroke engine. Valve lift is slowed and simplified for inspection.','Hardened steel reference'),
+ makePart('manifolds','Intake & exhaust','Manifolds','Route fresh charge and exhaust','Intake runners supply the cylinders. Separate exhaust runners carry burned gases away from each head.','Alloy / steel reference')
+];
+const ROTARY_PARTS:EnginePart[]=[
+ makePart('housing','Rotor housing','Housing','Define the working chambers','The two-lobed housing follows an epitrochoid. The three rotor apexes trace its inner wall as chamber volumes change.','Coated alloy reference'),
+ makePart('rotor','Three-apex rotor','Rotor','Form moving chambers','The rotor combines orbital motion with rotation. Its three faces create separate working chambers around the eccentric shaft. Rotor-face details are illustrative.','Iron-alloy reference'),
+ makePart('seals','Apex & side seals','Seals','Separate the chambers','Three apex seals sit at the rotor tips. Side seals follow each rotor face to reduce leakage toward the end plates.','Wear-resistant alloy reference'),
+ makePart('eccentric','Eccentric shaft','Output shaft','Carry the offset rotor','An offset journal supports the rotor. The shaft completes three revolutions for each full rotor revolution.','Hardened steel reference'),
+ makePart('gears','Timing gears','Gears','Constrain rotor orientation','An internal rotor gear meshes with a fixed gear. Their 3:2 tooth-count ratio maintains the required rotor motion.','Hardened steel reference'),
+ makePart('endplates','Side housings','Side plates','Seal the axial faces','Side housings close the chamber on both sides and support the shaft bearings. Fasteners tie the housing stack together.','Iron / alloy reference'),
+ makePart('ports','Ports & ignition','Ports','Admit charge and ignite it','Intake and exhaust ports open as the rotor passes. Two illustrative spark plugs enter the housing near the combustion region.','Alloy / ceramic reference')
+];
+export function getParts(engine:EngineType):EnginePart[]{
+ let parts:EnginePart[]=engine==='v8'||engine==='inline4'?PISTON_PARTS:engine==='rotary'?ROTARY_PARTS:PARTS;
+ parts=parts.map(p=>({...p}));
+ if(engine==='turbojet'){parts[0]={...parts[0],name:'Inlet & guide vanes',short:'Inlet',description:'The inlet guides incoming air into the compressor. This turbojet has no separate bypass fan.'};parts[5]={...parts[5],name:'Core casing',short:'Casing',description:'The core casing supports the compressor and turbine stators and contains the core flow.'};parts[6].description='A single shaft links the turbine to the axial compressor.';}
+ if(engine==='turboprop'||engine==='turboshaft'){
+ parts[0]={...parts[0],name:engine==='turboprop'?'Propeller & gearbox':'Output shaft & gearbox',short:engine==='turboprop'?'Propeller':'Output',role:'Deliver mechanical power',description:engine==='turboprop'?'A five-blade propeller is driven through reduction gearing. The reduction stage lowers propeller speed relative to the power turbine.':'A reduction gearbox drives an external output flange. The output can power machinery or a rotor transmission.',material:'Alloy / steel reference'};
+ parts[3]={...parts[3],name:'Gas & power turbines',description:'Upstream turbine stages drive the compressor. A separate power turbine supplies torque to the reduction gearbox.'};
+ parts[4]={...parts[4],name:'Exhaust duct',short:'Exhaust',role:'Discharge spent gas',description:'The exhaust duct guides gas away after the power turbine has extracted shaft work.'};
+ parts[5]={...parts[5],name:'Core casing',description:'A compact casing contains the gas generator and power turbine. There is no large turbofan bypass duct.'};parts[6].description='Concentric shafts transmit gas-generator and power-turbine torque. Relative speeds are illustrative.';
+ }
+ return parts.map((p,i)=>({...p,number:String(i+1).padStart(2,'0'),color:['#82c7df','#9cb3d6','#e9a46e','#c4a590','#9db6b6','#b8c1ca','#c1c49f'][i]}));
+}
