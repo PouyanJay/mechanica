@@ -260,3 +260,5 @@ body{background:var(--page-bg);color:var(--ink)}
 .model-label.on-dark span{color:#eef1f4;-webkit-text-stroke:3px rgba(4,6,10,.8)}
 .model-label.on-dark polyline{stroke:#dfe6ee;opacity:.85}
 .model-label.selected span,.model-label.on-bright.selected span,.model-label.on-dark.selected span{color:var(--gold)}
+/* Console: capped width, centred on wide screens (unchanged at laptop widths) */
+@media(min-width:1001px){.bottom-console{left:50%;right:auto;transform:translateX(-50%);width:min(100% - 72px,1200px)}}
