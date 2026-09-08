@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Engine Atlas | Seven Interactive Engines",
+  title: "Mechanica | Seven Interactive Engines",
   description: "Explore seven turbine, piston and rotary engines in interactive 3D. Inspect components, reveal cutaways, and separate assemblies.",
   other: {
     "codex-preview": "development",

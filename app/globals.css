@@ -214,3 +214,6 @@ body{background:var(--page-bg);color:var(--ink)}
 [data-theme=light]{--canvas-bg:radial-gradient(ellipse 75% 65% at 58% 48%,#fff 0%,#eef1f5 50%,#e3e8ee 80%,#dde3ea 100%)}
 .atlas{background:var(--canvas-bg);min-height:100dvh}
 .topbar,.workbench,.viewport{background:transparent}
+
+/* Wordmark: no chip, just the mark and the name */
+.brand{background:transparent;border:0;box-shadow:none;backdrop-filter:none;padding:0 0 0 4px;font-size:15px;font-weight:600;letter-spacing:.08em;gap:11px}
