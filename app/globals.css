@@ -236,3 +236,15 @@ body{background:var(--page-bg);color:var(--ink)}
 
 /* The canvas ends where the console begins, in every mode (console tops measured at 177 / 222 / 238 from the viewport bottom), so the fitted model is never hidden behind it */
 @media(min-width:1001px){.viewport .scene-host{bottom:190px}.viewport:has(.console-slider) .scene-host{bottom:236px}.viewport.is-exploded .scene-host,.viewport.is-exploded.has-selection .scene-host{bottom:252px}}
+
+/* Callout labels: dot + thin leader + name on a shelf, no box */
+:root{--label-halo:0 0 2px rgba(0,0,0,.95),0 0 5px rgba(0,0,0,.85),0 1px 14px rgba(0,0,0,.7)}
+[data-theme=light]{--label-halo:0 1px 3px rgba(255,255,255,.9),0 0 12px rgba(255,255,255,.8)}
+.model-label{position:absolute;left:0;top:0;width:0;height:0;overflow:visible;transform:none;background:none;border:0;padding:0;border-radius:0;backdrop-filter:none;color:var(--ink-mid);font-family:inherit;font-size:12px;letter-spacing:.01em;white-space:nowrap;pointer-events:none}
+.model-label:before{content:'';position:absolute;display:block;left:-3.5px;top:-3.5px;width:7px;height:7px;margin:0;border-radius:50%;background:var(--part-color);box-shadow:0 0 0 2px rgba(0,0,0,.4)}
+.model-label svg{position:absolute;left:0;top:0;width:1px;height:1px;overflow:visible}
+.model-label polyline{fill:none;stroke:currentColor;stroke-width:1;opacity:.8}
+.model-label span{position:absolute;pointer-events:auto;cursor:pointer;color:var(--ink);font-weight:500;line-height:1;padding:2px 3px;text-shadow:var(--label-halo)}
+.model-label:hover{color:var(--ink)}
+.model-label.selected{color:var(--gold);border-color:transparent}
+.model-label.selected span{color:var(--gold)}
