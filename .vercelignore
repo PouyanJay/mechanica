@@ -1,0 +1,10 @@
+# Build output and local tool state from the Cloudflare/vinext target.
+# Source directories must stay: tsconfig type-checks `**/*.ts`, and
+# vite.config.ts imports from tooling/ and worker/.
+dist
+.wrangler
+.sites-runtime
+.run-state
+outputs
+work
+docs/assets

@@ -25,3 +25,4 @@ jobs:
         continue-on-error: true
       - run: npm run test:engines
       - run: npm run test:local
+      - run: npm run build:next

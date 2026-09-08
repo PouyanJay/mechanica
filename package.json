@@ -21,6 +21,7 @@
     "lint": "bash scripts/sites-env.sh -- eslint . --ignore-pattern dist --ignore-pattern .next",
     "dev:local": "vite",
     "build:local": "vinext build",
+    "build:next": "next build",
     "start:local": "vinext start",
     "test:engines": "node scripts/check-explosion.mjs",
     "test:local": "npm run build:local && node --test tests/rendered-html.test.mjs tests/ui-components.test.mjs"

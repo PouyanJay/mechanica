@@ -10,6 +10,8 @@ Turbofan, turbojet, turboprop, turboshaft, V8, inline-four and Wankel rotary, ev
 parametric model built in code. Spin the mechanism, slice it open, follow the air through it, then
 drag one slider from a fully assembled engine to every single bolt laid out on a shelf, and back again.
 
+[![Live demo](https://img.shields.io/badge/demo-mechanica--atlas.vercel.app-dca27d?style=flat-square&logo=vercel&logoColor=white)](https://mechanica-atlas.vercel.app)
+[![Release](https://img.shields.io/github/v/release/PouyanJay/mechanica?style=flat-square&color=8b94a6)](https://github.com/PouyanJay/mechanica/releases)
 [![CI](https://img.shields.io/github/actions/workflow/status/PouyanJay/mechanica/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/PouyanJay/mechanica/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-e8a33d?style=flat-square)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?style=flat-square&logo=typescript&logoColor=white)](tsconfig.json)
@@ -25,9 +27,10 @@ drag one slider from a fully assembled engine to every single bolt laid out on a
 [Quick start](#quick-start) ·
 [Project layout](#project-layout) ·
 [Verification](#verification) ·
+[Deployment](#deployment) ·
 [Docs](#documentation)
 
-<br/>
+[**▶ Open the live app**](https://mechanica-atlas.vercel.app) · no install, needs a WebGL2 browser
 
 <img src="docs/assets/hero-separation.webp" alt="A turbofan engine in Mechanica, partially separated: the casing has lifted away and rings of fasteners hover around the fan, compressor, combustor and turbine stages" width="900" />
 
@@ -215,12 +218,18 @@ Numeric checks do not judge visual quality, so rendering changes are reviewed in
 | [docs/HANDOFF.md](docs/HANDOFF.md) | Provenance and tooling record from the original handoff |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Setup, the verification matrix, and conventions |
 
-## Hosting
+## Deployment
 
-`.openai/hosting.json` declares optional D1 and R2 bindings for Sites hosting and is imported by the
-Vite config, so keep it in place even when both values are null. Other hosts need a compatible Worker
-deployment. `python3 scripts/export-repository.py <zip path>` produces a source-only archive of the
-current commit.
+The live app at [mechanica-atlas.vercel.app](https://mechanica-atlas.vercel.app) is deployed by
+Vercel's Git integration: every push to `main` becomes a production deployment, and every pull request
+gets its own preview URL. `vercel.json` tells Vercel to build with `npm run build:next`, a plain
+`next build` that prerenders the page as static content, so no Cloudflare binding is needed there.
+CI runs the same build on every push to catch a broken deployment before Vercel does.
+
+The Cloudflare Worker target is unchanged. `npm run build:local` still produces `dist/` with the
+Worker and client assets, and `.openai/hosting.json` still declares the optional D1 and R2 bindings
+that the Vite config imports, so keep it in place even when both values are null.
+`python3 scripts/export-repository.py <zip path>` produces a source-only archive of the current commit.
 
 ## License
 
