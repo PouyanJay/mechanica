@@ -23,7 +23,7 @@ export default function EngineScene({state,onSelect,onStats}:Props){
   scene.add(new T.HemisphereLight(0xc5e2ff,0x343a46,2));
   const key=new T.DirectionalLight(0xfff5e8,5);key.position.set(-5,8,5);key.castShadow=true;key.shadow.mapSize.set(2048,2048);Object.assign(key.shadow.camera,{left:-12,right:12,top:9,bottom:-9,near:.5,far:35});key.shadow.normalBias=.035;scene.add(key);
   const rim=new T.DirectionalLight(0x8fc9ff,3.8);rim.position.set(4,4,-7);scene.add(rim);const front=new T.DirectionalLight(0xffffff,2);front.position.set(-8,1,2);scene.add(front);
-  const floor=new T.Mesh(new T.PlaneGeometry(150,150),new T.ShadowMaterial({opacity:.25}));floor.rotation.x=-Math.PI/2;floor.position.y=-2.7;floor.receiveShadow=true;scene.add(floor);
+  const floor=new T.Mesh(new T.PlaneGeometry(150,150),new T.ShadowMaterial({opacity:.35}));floor.rotation.x=-Math.PI/2;floor.position.y=-2.7;floor.receiveShadow=true;scene.add(floor);
   const grid=new T.GridHelper(40,40,0x3a424c,0x232b33);grid.position.y=-2.72;(grid.material as T.Material).transparent=true;(grid.material as T.Material).opacity=.2;scene.add(grid);
   let root=new T.Group();scene.add(root);let groups:Record<string,T.Group>={},rotors:T.Group[]=[],picks:T.Object3D[]=[],materials:T.MeshStandardMaterial[]=[],labels:HTMLButtonElement[]=[];
   let explosion:ExplosionController|null=null;let PARTS=getParts(live.current.engine);let mechanism:((time:number)=>void)|null=null,mechanismTime=0;let modelBounds=new T.Box3();
