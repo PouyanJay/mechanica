@@ -248,3 +248,7 @@ body{background:var(--page-bg);color:var(--ink)}
 .model-label:hover{color:var(--ink)}
 .model-label.selected{color:var(--gold);border-color:transparent}
 .model-label.selected span{color:var(--gold)}
+/* Map-label legibility: a soft outline drawn behind the glyphs keeps names readable over bright surfaces without a box */
+:root{--label-stroke:rgba(4,6,10,.7)}
+[data-theme=light]{--label-stroke:rgba(255,255,255,.85)}
+.model-label span{-webkit-text-stroke:3px var(--label-stroke);paint-order:stroke fill;text-shadow:none;font-weight:500;letter-spacing:.015em}

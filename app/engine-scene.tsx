@@ -246,9 +246,24 @@ export default function EngineScene({state,onSelect,onStats}:Props){
     headGeo.attributes.position.needsUpdate=true;headGeo.attributes.color.needsUpdate=true;
    }
    const offsets=[[-3.4,2.7,0],[-.9,1.8,0],[1.45,1.7,0],[3,1.55,0],[4.5,-1.5,0],[-1.6,-2.6,0],[0,-1.3,0]];
-   // Callout labels: a dot on the part, a thin leader rising to a shelf that carries the name. Leaders all rise (names clear the silhouette) on three staggered tiers, and shelves point away from the model's screen centre, so they rarely collide.
-   const centreX=modelBounds.getCenter(new T.Vector3()).project(camera).x;let topY=Infinity;for(let k=0;k<8;k++){const c=new T.Vector3(k&1?modelBounds.max.x:modelBounds.min.x,k&2?modelBounds.max.y:modelBounds.min.y,k&4?modelBounds.max.z:modelBounds.min.z).project(camera);if(c.z<1)topY=Math.min(topY,(-c.y*.5+.5)*el.clientHeight);}
-   labels.forEach((l,i)=>{const p=PARTS[i],g=groups[p.id];const pos=(g.userData.anchor as T.Vector3).clone().project(camera);l.hidden=inventoryVisible||!s.labels||!g.visible||pos.z>1||pos.x<-.95||pos.x>.95||pos.y<-.9||pos.y>.9;if(l.hidden)return;l.style.left=((pos.x*.5+.5)*el.clientWidth)+'px';l.style.top=((-pos.y*.5+.5)*el.clientHeight)+'px';const anchorY=(-pos.y*.5+.5)*el.clientHeight;const right=pos.x>=centreX,ex=right?40:-40,ey=Math.min(-44,(topY-22-(i%3)*26)-anchorY);const span=l.lastChild as HTMLElement,w=span.offsetWidth||60;(l.firstChild!.firstChild as SVGElement).setAttribute('points',`0,0 ${ex},${ey} ${ex+(right?w+6:-(w+6))},${ey}`);span.style.left=(right?ex+3:ex-3)+'px';span.style.top=(ey-17)+'px';span.style.transform=right?'':'translateX(-100%)';l.classList.toggle('selected',s.selected===p.id);});
+   // Callout labels. Each name sits close to its part, offset radially from the model's screen centre (biased upward), with a short leader from a dot on the part. Labels repel each other in screen space so they never overlap, extend a little only when that clears the silhouette, and stay inside the canvas.
+   const W=el.clientWidth,H=el.clientHeight;const cN=modelBounds.getCenter(new T.Vector3()).project(camera);const cx=(cN.x*.5+.5)*W,cy=(-cN.y*.5+.5)*H;
+   let bx0=Infinity,bx1=-Infinity,by0=Infinity,by1=-Infinity;for(let k=0;k<8;k++){const c=new T.Vector3(k&1?modelBounds.max.x:modelBounds.min.x,k&2?modelBounds.max.y:modelBounds.min.y,k&4?modelBounds.max.z:modelBounds.min.z).project(camera);if(c.z>=1)continue;const x=(c.x*.5+.5)*W,y=(-c.y*.5+.5)*H;bx0=Math.min(bx0,x);bx1=Math.max(bx1,x);by0=Math.min(by0,y);by1=Math.max(by1,y);}
+   const boxes:{l:HTMLButtonElement;ax:number;ay:number;x:number;y:number;w:number;h:number}[]=[];
+   labels.forEach((l,i)=>{const p=PARTS[i],g=groups[p.id];const pos=(g.userData.anchor as T.Vector3).clone().project(camera);l.hidden=inventoryVisible||!s.labels||!g.visible||pos.z>1||pos.x<-.95||pos.x>.95||pos.y<-.9||pos.y>.9;l.classList.toggle('selected',s.selected===p.id);if(l.hidden)return;
+    const ax=(pos.x*.5+.5)*W,ay=(-pos.y*.5+.5)*H;l.style.left=ax+'px';l.style.top=ay+'px';
+    const span=l.lastChild as HTMLElement,w=(span.offsetWidth||60)+2,h=20;
+    let dx=ax-cx,dy=ay-cy;const len=Math.hypot(dx,dy)||1;dx/=len;dy=dy/len-.5;const n=Math.hypot(dx,dy)||1;dx/=n;dy/=n;
+    let L=58;while(L<110&&ax+dx*L>bx0-w/2&&ax+dx*L<bx1+w/2&&ay+dy*L>by0-h&&ay+dy*L<by1)L+=8;
+    boxes.push({l,ax,ay,x:ax+dx*L,y:ay+dy*L,w,h});});
+   for(let it=0;it<12;it++){for(let a=0;a<boxes.length;a++)for(let b=a+1;b<boxes.length;b++){const A=boxes[a],B=boxes[b];const ox=(A.w+B.w)/2+12-Math.abs(A.x-B.x),oy=(A.h+B.h)/2+6-Math.abs(A.y-B.y);if(ox>0&&oy>0){if(ox<oy){const push=(A.x<B.x?-1:1)*ox/2;A.x+=push;B.x-=push;}else{const push=(A.y<B.y?-1:1)*oy/2;A.y+=push;B.y-=push;}}}
+    for(const b of boxes){b.x=Math.min(Math.max(b.x,b.w/2+10),W-b.w/2-10);b.y=Math.min(Math.max(b.y,b.h/2+10),H-b.h/2-10);}}
+   for(const b of boxes){const rx=b.x-b.ax,ry=b.y-b.ay,span=b.l.lastChild as HTMLElement;span.style.left=(rx-b.w/2)+'px';span.style.top=(ry-b.h/2)+'px';span.style.transform='';
+    // The leader meets the name at the edge facing the part; side attachments get an underline shelf, vertical ones a plain tip.
+    const side=Math.abs(rx)*b.h>Math.abs(ry)*b.w;let pts:string;
+    if(side){const ex=rx+(rx<0?b.w/2:-b.w/2),ey=ry+b.h/2-4;pts=`0,0 ${ex},${ey} ${ex+(rx<0?-b.w:b.w)},${ey}`;}
+    else{const ex=rx,ey=ry+(ry<0?b.h/2-2:-b.h/2+2);pts=`0,0 ${ex},${ey}`;}
+    (b.l.firstChild!.firstChild as SVGElement).setAttribute('points',pts);}
    renderer.render(scene,camera);
   }
   const onControlStart=()=>{goal=null;targetGoal=null;};controls.addEventListener('start',onControlStart);
