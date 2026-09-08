@@ -225,7 +225,7 @@ export default function EngineScene({state,onSelect,onStats}:Props){
    for(const p of PARTS){const g=groups[p.id];g.visible=!s.hidden.includes(p.id)&&(!s.isolated||s.isolated===p.id);}
    if(s.selected!==prevSelected){root.traverse(o=>{if(o instanceof T.Mesh){const m=o.material as T.MeshStandardMaterial;m.emissive.setHex(o.userData.part===s.selected?0xd39868:0);m.emissiveIntensity=o.userData.part===s.selected?.17:0;}});prevSelected=s.selected;}
    if(s.playing&&!inventoryVisible){mechanismTime+=dt*s.speed;mechanism?.(mechanismTime);rotors.forEach((r,i)=>r.rotation.x+=dt*s.speed*(r.userData.rate??(i===0&&s.engine==='turbofan'?.7:1.1)));}
-   controls.mouseButtons.LEFT=s.mode==='exploded'&&progress>.8&&s.explodeLayout==='inventory'?T.MOUSE.PAN:T.MOUSE.ROTATE;controls.touches.ONE=s.mode==='exploded'&&progress>.8&&s.explodeLayout==='inventory'?T.TOUCH.PAN:T.TOUCH.ROTATE;controls.update();flow.visible=s.flow&&ENGINES[s.engine].flow&&!inventoryVisible&&!s.isolated;
+   controls.autoRotate=s.spin&&!(s.mode==='exploded'&&s.explodeLayout==='inventory'&&progress>.3);controls.autoRotateSpeed=reducedMotion?0:1.2;controls.mouseButtons.LEFT=s.mode==='exploded'&&progress>.8&&s.explodeLayout==='inventory'?T.MOUSE.PAN:T.MOUSE.ROTATE;controls.touches.ONE=s.mode==='exploded'&&progress>.8&&s.explodeLayout==='inventory'?T.TOUCH.PAN:T.TOUCH.ROTATE;controls.update();flow.visible=s.flow&&ENGINES[s.engine].flow&&!inventoryVisible&&!s.isolated;
    if(flow.visible){
     flowTime+=dt*(s.playing?Math.max(.6,s.speed):1);
     const fan=s.engine==='turbofan',power=s.engine==='turboprop'||s.engine==='turboshaft';

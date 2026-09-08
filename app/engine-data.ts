@@ -18,7 +18,7 @@ export const PARTS = [
  {id:'shaft', name:'Shafts & bearings', short:'Shafts', color:'#c1c49f', number:'07', role:'Transfer mechanical power', description:'Shafts transmit torque between turbine and compressor. This turbofan reference uses concentric low- and high-pressure shafts; bearings support their rotation.', material:'High-strength steel reference', relation:'Links turbine to compressor and fan', x:0}
 ];
 export type PartId = typeof PARTS[number]['id'];
-export type ViewerState = { engine:EngineType; mode:string; explode:number; explodeLayout:'radial'|'inventory'; spacing:number; cycling:boolean; selectedPiece:string|null; isolatedPiece:string|null; section:number; playing:boolean; speed:number; flow:boolean; labels:boolean;grid:boolean; hidden:string[]; selected:string|null; isolated:string|null; quality:string; camera:string; reset:number; zoom:number };
+export type ViewerState = { engine:EngineType; mode:string; explode:number; explodeLayout:'radial'|'inventory'; spacing:number; cycling:boolean; selectedPiece:string|null; isolatedPiece:string|null; section:number; playing:boolean; speed:number; flow:boolean; labels:boolean;grid:boolean;spin:boolean; hidden:string[]; selected:string|null; isolated:string|null; quality:string; camera:string; reset:number; zoom:number };
 
 export type EnginePart = {id:string;name:string;short:string;color:string;number:string;role:string;description:string;material:string;relation:string;x:number};
 const makePart=(id:string,name:string,short:string,role:string,description:string,material:string,x=0):EnginePart=>({id,name,short,role,description,material,relation:'',x,number:'',color:'#b3c4d2'});
