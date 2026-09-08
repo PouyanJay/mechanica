@@ -103,7 +103,7 @@ export default function EngineScene({state,onSelect,onStats}:Props){
   function overview(){const s=live.current;const size=modelBounds.getSize(new T.Vector3()),center=modelBounds.getCenter(new T.Vector3());const distance=Math.max(12,Math.max(size.y,size.x/Math.max(.4,camera.aspect))*1.9+size.z);goal=new T.Vector3(...(s.camera==='front'?[-1,.06,0]:s.camera==='side'?[0,.1,1]:[-.55,.36,.75]) as [number,number,number]).normalize().multiplyScalar(distance).add(center);targetGoal=center;}
   function fitExplosion(amount:number){
    if(!explosion)return;
-   const fit=explosion.fit(amount,camera.aspect);const size=fit.bounds.getSize(new T.Vector3());orthoHalfGoal=Math.max(size.y/2,size.x/(2*camera.aspect),1)*1.14;if(camera instanceof T.OrthographicCamera){camera.zoom=1;camera.updateProjectionMatrix();}
+   const fit=explosion.fit(amount,camera.aspect);const size=fit.bounds.getSize(new T.Vector3());orthoHalfGoal=Math.max(size.y/2,size.x/(2*camera.aspect),1)*1.22;if(camera instanceof T.OrthographicCamera){camera.zoom=1;camera.updateProjectionMatrix();}
    const inventory=live.current.explodeLayout==='inventory';
    const stage=inventory?T.MathUtils.clamp((amount-.3)/.5,0,1):0;const direction=new T.Vector3(-10,6.5,13.5).normalize().lerp(inventory?new T.Vector3(0,0,1):new T.Vector3(-.12,.32,1).normalize(),inventory?stage:1).normalize();
    goal=fit.center.clone().addScaledVector(direction,fit.distance*(inventory?1:1.15));targetGoal=fit.center;
