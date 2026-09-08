@@ -83,8 +83,84 @@ export default function EngineScene({state,onSelect,onStats}:Props){
    const partMaterials=new Map<string,T.MeshStandardMaterial>();root.traverse(o=>{if(o instanceof T.Mesh){let p:T.Object3D|null=o;while(p&&!p.userData.id)p=p.parent;o.userData.part=p?.userData.id;const source=o.material as T.MeshStandardMaterial;const key=o.userData.part+source.uuid;let local=partMaterials.get(key);if(!local){local=source.clone();local.clippingPlanes=source.clippingPlanes;partMaterials.set(key,local);materials.push(local);}o.material=local;picks.push(o);}});root.updateWorldMatrix(true,true);modelBounds.setFromObject(root);for(const group of Object.values(groups)){const bounds=new T.Box3().setFromObject(group);group.userData.anchor=bounds.getCenter(new T.Vector3());}currentEngine=kind;explosion=new ExplosionController(root);scene.add(explosion.root);stats.current(explosion.count,explosion.count);
   }
   build(live.current.engine);
-  // Airflow is a schematic particle path, not a fluid simulation.
-  const n=550,positions=new Float32Array(n*3),colors=new Float32Array(n*3),flowGeo=new T.BufferGeometry();flowGeo.setAttribute('position',new T.BufferAttribute(positions,3));flowGeo.setAttribute('color',new T.BufferAttribute(colors,3));const flow=new T.Points(flowGeo,new T.PointsMaterial({size:.034,vertexColors:true,transparent:true,opacity:.7,depthWrite:false,blending:T.AdditiveBlending}));scene.add(flow);
+  // Airflow is a schematic visualization, not a fluid simulation: comet-like
+  // streaklines advance through the engine stations (intake, compression,
+  // combustion, jet) with station-based speed, rotor swirl, turbulence jitter
+  // and a temperature colour ramp. It runs whenever the overlay is on, even
+  // with mechanism playback paused.
+  const n=2400,flowSeg=new Float32Array(n*6),flowSegColor=new Float32Array(n*6),flowHead=new Float32Array(n*3),flowHeadColor=new Float32Array(n*3);
+  const segGeo=new T.BufferGeometry();segGeo.setAttribute('position',new T.BufferAttribute(flowSeg,3));segGeo.setAttribute('color',new T.BufferAttribute(flowSegColor,3));
+  const headGeo=new T.BufferGeometry();headGeo.setAttribute('position',new T.BufferAttribute(flowHead,3));headGeo.setAttribute('color',new T.BufferAttribute(flowHeadColor,3));
+  const flowLines=new T.LineSegments(segGeo,new T.LineBasicMaterial({vertexColors:true,transparent:true,opacity:.9,depthWrite:false,blending:T.AdditiveBlending}));
+  const flowHeads=new T.Points(headGeo,new T.PointsMaterial({size:.09,vertexColors:true,transparent:true,opacity:.95,depthWrite:false,blending:T.AdditiveBlending}));
+  flowLines.frustumCulled=false;flowHeads.frustumCulled=false;
+  const flow=new T.Group();flow.add(flowLines);flow.add(flowHeads);scene.add(flow);
+  let flowTime=0;const flowP=new T.Vector3(),flowQ=new T.Vector3(),flowC=new T.Color(),flowD=new T.Color();
+  // Independent per-particle seeds. Deriving phase and angle both linearly
+  // from i correlates them (a golden-ratio resonance) and braids the streams
+  // into ropes; hashing keeps the cones axisymmetric.
+  const flowSeedP=new Float32Array(n),flowSeedA=new Float32Array(n),flowSeedJ=new Float32Array(n),flowSeedR=new Float32Array(n);
+  for(let i=0;i<n;i++){const h=(k:number)=>{const v=Math.sin(i*12.9898+k*78.233)*43758.5453;return v-Math.floor(v);};flowSeedP[i]=h(1);flowSeedA[i]=h(2)*TAU;flowSeedJ[i]=h(3)-.5;flowSeedR[i]=h(4);}
+  const mix3=(c:T.Color,r:number,g:number,b:number,t:number)=>{c.r+=(r-c.r)*t;c.g+=(g-c.g)*t;c.b+=(b-c.b)*t;};
+  // Most of each particle's life is spent where the flow is actually visible
+  // from outside: the spiralling intake capture, the bypass sheath along the
+  // rear casing, and the jet. The interior pass is brief; the cutaway still
+  // reveals it while the section plane is open.
+  function flowSample(p:number,i:number,bypass:boolean,fan:boolean,power:boolean,out:T.Vector3,c:T.Color){
+   const a=flowSeedA[i],jit=flowSeedJ[i],wob=Math.sin(flowTime*2.3+i*1.31);
+   if(p<.3){
+    // Intake capture: a wide, slow spiral drawn in toward the inlet lip.
+    const lip=bypass?1.9:fan?1.3:.95,capture=(bypass?2.75:fan?2.45:1.9)+jit*.3;
+    const t=p/.3,x=-6.4+t*3.4;
+    const r=lip+(capture-lip)*(1-t)*(1-t)+wob*.02;
+    const sw=a+flowTime*.42+t*t*2.6;
+    out.set(x+jit*.5,Math.sin(sw)*r,Math.cos(sw)*r);
+    c.setRGB(.32,.58,1);mix3(c,.55,.85,1,t);
+    c.multiplyScalar((.3+.7*t*t)*(.82+.18*wob)*Math.min(1,p*24));
+    return;
+   }
+   if(bypass){
+    if(p<.44){
+     // Hidden run through the fan duct.
+     const t=(p-.3)/.14,x=-3+t*4.2,r=1.62+jit*.1;
+     const sw=a+flowTime*.28+t*1.1;
+     out.set(x,Math.sin(sw)*r,Math.cos(sw)*r);
+     c.setRGB(.5,.78,1).multiplyScalar(.9);
+    }else{
+     // Cool sheath streaming along the rear casing.
+     const t=(p-.44)/.56,x=1.2+t*4.4,r=1.66+t*.42+wob*(.02+t*.05);
+     const sw=a+flowTime*.28+1.1+t*.5;
+     out.set(x,Math.sin(sw)*r,Math.cos(sw)*r);
+     c.setRGB(.55,.8,1).multiplyScalar((1-t*.8)*(.85+.15*Math.sin(flowTime*3.1+i*2.1)));
+    }
+    c.multiplyScalar(Math.min(1,(1-p)*6));
+    return;
+   }
+   if(p<.46){
+    // Brief interior pass: compression, combustion flash, turbine.
+    const t=(p-.3)/.16,x=-2.7+t*7.7;
+    const r=Math.max(.1,(.85-t*.35)*(1+jit*.12)+wob*.03);
+    const sw=a+flowTime*.35+t*4.2;
+    out.set(x,Math.sin(sw)*r,Math.cos(sw)*r);
+    c.setRGB(.6,.82,1);
+    mix3(c,1,.66,.26,Math.min(1,Math.max(0,(t-.42)*2.4)));
+    mix3(c,1,.9,.62,Math.max(0,(t-.75)*3)*.6);
+    c.multiplyScalar(1+.3*Math.sin(flowTime*7+i*3.7)*Math.max(0,t-.4));
+    return;
+   }
+   // Jet: white-hot core with shock-diamond shimmer, widening into a
+   // turbulent plume that dims to ember red. Power turbines extract the
+   // energy first, so theirs is short and subdued.
+   const t=(p-.46)/.54,x=5+(1-Math.pow(1-t,1.4))*(power?2.2:3.9);
+   const r=Math.max(.05,(.5+t*t*(power?.5:1.05))*(1+jit*.2)+wob*(.02+t*.14));
+   const sw=a+flowTime*.3+4.2+t*.8;
+   out.set(x+wob*t*.06,Math.sin(sw)*r,Math.cos(sw)*r);
+   c.setRGB(1,.94,.75);
+   mix3(c,1,.5,.16,Math.min(1,t*1.9));
+   mix3(c,.5,.12,.05,Math.max(0,(t-.55)*2.2));
+   const diamonds=power?1:1+.6*Math.exp(-t*3)*Math.pow(Math.sin((x-5)*4.6),2);
+   c.multiplyScalar(diamonds*(1-t*t*.75)*(power?.5:.95)*Math.min(1,(1-p)*5));
+  }
   const ray=new T.Raycaster(),pointer=new T.Vector2();let down=[0,0];
   function pointerDown(e:PointerEvent){down=[e.clientX,e.clientY];}
   function pointerUp(e:PointerEvent){
@@ -96,7 +172,7 @@ export default function EngineScene({state,onSelect,onStats}:Props){
   renderer.domElement.addEventListener('pointerdown',pointerDown);renderer.domElement.addEventListener('pointerup',pointerUp);
   let layoutKey='',fitRequested=true,layoutBlend=1,orthoHalfGoal=10;
   const resize=()=>{const w=el.clientWidth,h=el.clientHeight;if(!w||!h)return;renderer.setSize(w,h);camera.aspect=w/h;orthographic.aspect=w/h;perspective.aspect=w/h;if(camera instanceof T.OrthographicCamera){camera.left=-camera.top*camera.aspect;camera.right=camera.top*camera.aspect;}camera.updateProjectionMatrix();layoutKey='';fitRequested=true;};const observer=new ResizeObserver(resize);observer.observe(el);resize();
-  let frame=0,last=performance.now(),time=0,prevReset=-1,prevCamera='',prevZoom=0,prevQuality='',prevSelected:string|null=null,prevIsolation:string|null=null;
+  let frame=0,last=performance.now(),prevReset=-1,prevCamera='',prevZoom=0,prevQuality='',prevSelected:string|null=null,prevIsolation:string|null=null;
   let progress=0,prevMode='',prevAmount=-1,previousMatrixProgress=-1,inventoryWasVisible=false,previousSlider=-1;
   let goal:T.Vector3|null=null,targetGoal:T.Vector3|null=null;
   const reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -144,9 +220,27 @@ export default function EngineScene({state,onSelect,onStats}:Props){
    clip.constant=s.mode==='cutaway'?T.MathUtils.lerp(modelBounds.min.y-.2,modelBounds.max.y+.2,s.section/100):100;floor.position.y=modelBounds.min.y-.2;grid.position.y=modelBounds.min.y-.22;
    for(const p of PARTS){const g=groups[p.id];g.visible=!s.hidden.includes(p.id)&&(!s.isolated||s.isolated===p.id);}
    if(s.selected!==prevSelected){root.traverse(o=>{if(o instanceof T.Mesh){const m=o.material as T.MeshStandardMaterial;m.emissive.setHex(o.userData.part===s.selected?0xd39868:0);m.emissiveIntensity=o.userData.part===s.selected?.17:0;}});prevSelected=s.selected;}
-   if(s.playing&&!inventoryVisible){time+=dt*s.speed;mechanismTime+=dt*s.speed;mechanism?.(mechanismTime);rotors.forEach((r,i)=>r.rotation.x+=dt*s.speed*(r.userData.rate??(i===0&&s.engine==='turbofan'?.7:1.1)));}
+   if(s.playing&&!inventoryVisible){mechanismTime+=dt*s.speed;mechanism?.(mechanismTime);rotors.forEach((r,i)=>r.rotation.x+=dt*s.speed*(r.userData.rate??(i===0&&s.engine==='turbofan'?.7:1.1)));}
    controls.mouseButtons.LEFT=s.mode==='exploded'&&progress>.8&&s.explodeLayout==='inventory'?T.MOUSE.PAN:T.MOUSE.ROTATE;controls.touches.ONE=s.mode==='exploded'&&progress>.8&&s.explodeLayout==='inventory'?T.TOUCH.PAN:T.TOUCH.ROTATE;controls.update();flow.visible=s.flow&&ENGINES[s.engine].flow&&!inventoryVisible&&!s.isolated;
-   if(flow.visible){for(let i=0;i<n;i++){const bypass=s.engine==='turbofan'&&i<n*.55;const x=((i*.137+time*1.8)%11)-5;const a=i*2.39996;const r=bypass?(1.65+Math.sin(i*13)*.16):(x< -2.3?1.1:x<.7?.9:x<2.3?.8:.72);positions[i*3]=x;positions[i*3+1]=Math.sin(a)*r;positions[i*3+2]=Math.cos(a)*r;const hot=!bypass&&x>.8;colors[i*3]=hot?1:.35;colors[i*3+1]=hot?.46:.76;colors[i*3+2]=hot?.17:1;}flowGeo.attributes.position.needsUpdate=true;flowGeo.attributes.color.needsUpdate=true;}
+   if(flow.visible){
+    flowTime+=dt*(s.playing?Math.max(.6,s.speed):1);
+    const fan=s.engine==='turbofan',power=s.engine==='turboprop'||s.engine==='turboshaft';
+    for(let i=0;i<n;i++){
+     const bypass=fan&&i<n*.45;
+     const rate=.075*(1+flowSeedR[i]*.3);
+     const p=(flowSeedP[i]+flowTime*rate)%1;
+     flowSample(p,i,bypass,fan,power,flowP,flowC);
+     flowSample(Math.max(0,p-.011),i,bypass,fan,power,flowQ,flowD);
+     flowSeg[i*6]=flowQ.x;flowSeg[i*6+1]=flowQ.y;flowSeg[i*6+2]=flowQ.z;
+     flowSeg[i*6+3]=flowP.x;flowSeg[i*6+4]=flowP.y;flowSeg[i*6+5]=flowP.z;
+     flowSegColor[i*6]=flowD.r*.12;flowSegColor[i*6+1]=flowD.g*.12;flowSegColor[i*6+2]=flowD.b*.12;
+     flowSegColor[i*6+3]=flowC.r;flowSegColor[i*6+4]=flowC.g;flowSegColor[i*6+5]=flowC.b;
+     flowHead[i*3]=flowP.x;flowHead[i*3+1]=flowP.y;flowHead[i*3+2]=flowP.z;
+     flowHeadColor[i*3]=flowC.r;flowHeadColor[i*3+1]=flowC.g;flowHeadColor[i*3+2]=flowC.b;
+    }
+    segGeo.attributes.position.needsUpdate=true;segGeo.attributes.color.needsUpdate=true;
+    headGeo.attributes.position.needsUpdate=true;headGeo.attributes.color.needsUpdate=true;
+   }
    const offsets=[[-3.4,2.7,0],[-.9,1.8,0],[1.45,1.7,0],[3,1.55,0],[4.5,-1.5,0],[-1.6,-2.6,0],[0,-1.3,0]];
    labels.forEach((l,i)=>{const p=PARTS[i],g=groups[p.id];const pos=(g.userData.anchor as T.Vector3).clone().add(new T.Vector3(0,.8,0)).project(camera);l.hidden=inventoryVisible||!s.labels||!g.visible||pos.z>1||pos.x<-.95||pos.x>.95||pos.y<-.9||pos.y>.9;l.style.left=((pos.x*.5+.5)*el.clientWidth)+'px';l.style.top=((-pos.y*.5+.5)*el.clientHeight)+'px';l.classList.toggle('selected',s.selected===p.id);});
    renderer.render(scene,camera);
