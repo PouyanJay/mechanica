@@ -226,3 +226,10 @@ body{background:var(--page-bg);color:var(--ink)}
 @media(min-width:761px){.viewport:not(.is-exploded):has(.console-slider) .view-orientation{bottom:234px}.viewport.is-exploded .view-orientation{bottom:250px}}
 /* Phone consoles: 206 / 251 / 263 */
 @media(max-width:760px){.viewport:not(.is-exploded) .view-orientation{bottom:218px}.viewport:not(.is-exploded):has(.console-slider) .view-orientation{bottom:263px}.viewport.is-exploded .view-orientation{bottom:275px}.viewport.is-exploded .scene-host,.viewport.is-exploded.has-selection .scene-host{bottom:312px}.viewport.is-exploded .part-detail{bottom:284px}}
+
+/* Camera presets live in the rail; the piece count is Explore-row metadata */
+.piece-count{font-size:12px;color:var(--ink-dim);white-space:nowrap;margin-left:auto;padding-right:4px}
+@media(max-width:760px){.piece-count{display:none}}
+.view-menu{min-width:140px;border-radius:12px;padding:6px;background:var(--glass-strong);border:1px solid var(--glass-border);backdrop-filter:blur(24px);box-shadow:var(--panel-shadow)}
+.view-menu [role=menuitemradio]{border-radius:8px;font-size:13px;padding:8px 10px 8px 28px;color:var(--ink-mid)}
+.view-menu [role=menuitemradio][data-state=checked]{color:var(--ink)}
