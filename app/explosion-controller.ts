@@ -70,9 +70,19 @@ export class ExplosionController {
   const independent=this.pieces.filter(p=>!p.attachment&&p.visible);
   const gap=.10+options.spacing/100*.55;
   if(options.layout==='inventory'){
+   // The inventory camera looks straight down +Z at the packed XY plane, so a
+   // piece reads broadside only when its thinnest local extent points at Z.
+   // Turbine parts revolve around local X, but the mechanical engines revolve
+   // around other axes, so pick the axis-aligned quarter turn per piece
+   // instead of assuming X. inventoryFlat still forces the authored identity.
+   const faceX=new T.Quaternion().setFromAxisAngle(new T.Vector3(0,1,0),Math.PI/2);
+   const faceZ=new T.Quaternion();
+   const faceY=new T.Quaternion().setFromAxisAngle(new T.Vector3(1,0,0),Math.PI/2);
    for(const p of independent){
-    // Blades face the camera broadside; revolved parts face along their shaft axis.
-    p.targetQuaternion.setFromAxisAngle(new T.Vector3(0,1,0),p.source.userData.inventoryFlat?0:Math.PI/2);
+    if(p.source.userData.inventoryFlat)p.targetQuaternion.copy(faceZ);
+    else{const e=p.localBox.getSize(new T.Vector3()).multiply(p.homeScale);
+     e.set(Math.abs(e.x),Math.abs(e.y),Math.abs(e.z));
+     p.targetQuaternion.copy(e.x<=e.z&&e.x<=e.y?faceX:e.z<=e.y?faceZ:faceY);}
     p.displayBox.copy(p.localBox).applyMatrix4(new T.Matrix4().compose(this.zero,p.targetQuaternion,p.homeScale));
    }
    const layout=packInventory(independent.map(p=>{const size=p.displayBox.getSize(new T.Vector3());return{id:p.id,group:p.part,width:size.x,height:size.y};}),options.aspect,gap);
