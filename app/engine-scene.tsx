@@ -171,7 +171,7 @@ export default function EngineScene({state,onSelect,onStats}:Props){
    const hits=ray.intersectObjects(picks,false);const hit=hits.find(h=>{let p:T.Object3D|null=h.object;while(p){if(!p.visible)return false;p=p.parent;}const m=(h.object as T.Mesh).material as T.MeshStandardMaterial;return !m.clippingPlanes?.length||clip.distanceToPoint(h.point)>=0;});select.current(hit?.object.userData.part??null,null);
   }
   renderer.domElement.addEventListener('pointerdown',pointerDown);renderer.domElement.addEventListener('pointerup',pointerUp);
-  let layoutKey='',fitRequested=true,layoutBlend=1,orthoHalfGoal=10;
+  let layoutKey='',fitRequested=true,layoutBlend=1,orthoHalfGoal=10,labelTick=0;
   const resize=()=>{const w=el.clientWidth,h=el.clientHeight;if(!w||!h)return;renderer.setSize(w,h);camera.aspect=w/h;orthographic.aspect=w/h;perspective.aspect=w/h;if(camera instanceof T.OrthographicCamera){camera.left=-camera.top*camera.aspect;camera.right=camera.top*camera.aspect;}camera.updateProjectionMatrix();layoutKey='';fitRequested=true;};const observer=new ResizeObserver(resize);observer.observe(el);resize();
   let frame=0,last=performance.now(),prevReset=-1,prevCamera='',prevZoom=0,prevQuality='',prevSelected:string|null=null,prevIsolation:string|null=null;
   let progress=0,prevMode='',prevAmount=-1,previousMatrixProgress=-1,inventoryWasVisible=false,previousSlider=-1;
@@ -265,6 +265,8 @@ export default function EngineScene({state,onSelect,onStats}:Props){
     else{const ex=rx,ey=ry+(ry<0?b.h/2-2:-b.h/2+2);pts=`0,0 ${ex},${ey}`;}
     (b.l.firstChild!.firstChild as SVGElement).setAttribute('points',pts);}
    renderer.render(scene,camera);
+   // Label contrast follows what is actually behind each name: sample the frame under the text every few frames and flip to dark-on-light over bright surfaces (transparent samples mean empty background, which keeps the theme default).
+   if(boxes.length&&labelTick++%5===0){const gl=renderer.getContext(),dpr=renderer.getPixelRatio(),px=new Uint8Array(4);for(const b of boxes){let sum=0,hits=0;for(let k=0;k<5;k++){const sx=Math.round((b.x-b.w/2+4+(b.w-8)*k/4)*dpr),sy=Math.round(gl.drawingBufferHeight-b.y*dpr);gl.readPixels(sx,sy,1,1,gl.RGBA,gl.UNSIGNED_BYTE,px);if(px[3]>40){sum+=(px[0]+px[1]+px[2])/3;hits++;}}const avg=hits?sum/hits:-1;b.l.classList.toggle('on-bright',hits>0&&avg>105);b.l.classList.toggle('on-dark',hits>0&&avg<=105);}}
   }
   const onControlStart=()=>{goal=null;targetGoal=null;};controls.addEventListener('start',onControlStart);
   frame=requestAnimationFrame(animate);setReady(true);
