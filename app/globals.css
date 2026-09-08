@@ -209,3 +209,8 @@ body{background:var(--page-bg);color:var(--ink)}
 .viewport:not(.is-exploded) .view-orientation{bottom:189px}
 .master-explode-heading output,.master-explode-heading output *{color:var(--ink-dim)}
 @media(max-width:760px){.viewport:not(.is-exploded) .part-detail{bottom:218px}.viewport:not(.is-exploded) .view-orientation{bottom:224px}.viewport:not(.is-exploded):has(.console-slider) .part-detail{bottom:260px}.viewport:not(.is-exploded):has(.console-slider) .view-orientation{bottom:266px}}
+/* One continuous ground for the whole page: header, sidebar margin and canvas share a single gradient, so no region edges can show */
+:root{--canvas-bg:radial-gradient(ellipse 75% 65% at 58% 48%,#161920 0%,#0c0d10 45%,#050506 78%,#000 100%)}
+[data-theme=light]{--canvas-bg:radial-gradient(ellipse 75% 65% at 58% 48%,#fff 0%,#eef1f5 50%,#e3e8ee 80%,#dde3ea 100%)}
+.atlas{background:var(--canvas-bg);min-height:100dvh}
+.topbar,.workbench,.viewport{background:transparent}
