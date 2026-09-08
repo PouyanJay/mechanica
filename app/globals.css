@@ -217,3 +217,12 @@ body{background:var(--page-bg);color:var(--ink)}
 
 /* Wordmark: no chip, just the mark and the name */
 .brand{background:transparent;border:0;box-shadow:none;backdrop-filter:none;padding:0 0 0 4px;font-size:15px;font-weight:600;letter-spacing:.08em;gap:11px}
+
+/* ---- Anchoring pass: overlays track the elements they belong to (measured, 12px gaps) ---- */
+/* Detail card top-aligns with the tool rail and sits beside it; the scene makes room in Explore */
+@media(min-width:1001px){.part-detail,.is-exploded .part-detail{top:98px;right:90px;width:280px}.is-exploded.has-selection .scene-host{right:380px}}
+.piece-parent{font-family:inherit;font-size:12px;color:var(--ink-dim);margin:-4px 0 8px;letter-spacing:0}
+/* View row: 12px above the console, whose height changes with mode (assembled 177, cutaway 222, explore 238 from the viewport bottom) */
+@media(min-width:761px){.viewport:not(.is-exploded):has(.console-slider) .view-orientation{bottom:234px}.viewport.is-exploded .view-orientation{bottom:250px}}
+/* Phone consoles: 206 / 251 / 263 */
+@media(max-width:760px){.viewport:not(.is-exploded) .view-orientation{bottom:218px}.viewport:not(.is-exploded):has(.console-slider) .view-orientation{bottom:263px}.viewport.is-exploded .view-orientation{bottom:275px}.viewport.is-exploded .scene-host,.viewport.is-exploded.has-selection .scene-host{bottom:312px}.viewport.is-exploded .part-detail{bottom:284px}}
