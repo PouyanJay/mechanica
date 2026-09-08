@@ -35,6 +35,7 @@ yarn-error.log*
 
 # typescript
 next-env.d.ts
+*.tsbuildinfo
 /dist/
 /.wrangler/
 /.sites-runtime/
@@ -43,3 +44,10 @@ next-env.d.ts
 
 # make run state (pids, logs, install stamps)
 /.run-state/
+
+# coding agent assets (local only, never committed)
+/AGENTS.md
+/CLAUDE.md
+/.agents/
+/.claude/
+/.codex/

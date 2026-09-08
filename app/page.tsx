@@ -7,9 +7,9 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem } from '@/components/ui/dropdown-menu';
-import EngineScene from './engine-scene';
-import type { PieceInfo } from './explosion-controller';
-import { ENGINES, getParts, EngineType, ViewerState } from './engine-data';
+import EngineScene from '@/components/engine/engine-scene';
+import type { PieceInfo } from '@/lib/engine/explosion-controller';
+import { ENGINES, getParts, EngineType, ViewerState } from '@/lib/engine/engine-data';
 const INITIAL:ViewerState={engine:'turbofan',mode:'assembled',explode:0,explodeLayout:'inventory',spacing:40,cycling:false,selectedPiece:null,isolatedPiece:null,section:52,playing:false,speed:1,flow:false,labels:false,grid:true,spin:false,hidden:[],selected:null,isolated:null,quality:'ultra',camera:'perspective',reset:0,zoom:0};
 export default function Home(){
  const [s,set]=useState<ViewerState>(INITIAL),[library,setLibrary]=useState(false),[help,setHelp]=useState(false),[settings,setSettings]=useState(false),[mobileParts,setMobileParts]=useState(false),[piece,setPiece]=useState<PieceInfo|null>(null),[counts,setCounts]=useState({total:0,visible:0});

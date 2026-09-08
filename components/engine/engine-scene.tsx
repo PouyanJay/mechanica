@@ -3,9 +3,9 @@ import { useEffect, useRef, useState } from 'react';
 import * as T from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
-import { getParts, EngineType, ENGINES, ViewerState } from './engine-data';
-import { buildPistonEngine, buildRotaryEngine, buildShaftOutput } from './mechanical-engines';
-import { ExplosionController, PieceInfo } from './explosion-controller';
+import { getParts, EngineType, ENGINES, ViewerState } from '@/lib/engine/engine-data';
+import { buildPistonEngine, buildRotaryEngine, buildShaftOutput } from '@/lib/engine/mechanical-engines';
+import { ExplosionController, PieceInfo } from '@/lib/engine/explosion-controller';
 
 type Props={state:ViewerState; onSelect:(id:string|null,piece?:PieceInfo|null)=>void; onStats:(total:number,visible:number)=>void};
 const TAU=Math.PI*2;

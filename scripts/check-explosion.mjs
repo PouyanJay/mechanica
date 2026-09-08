@@ -6,8 +6,8 @@ import ts from 'typescript';
 import * as T from 'three';
 const temp=resolve('.sites-runtime/explosion-check');await mkdir(temp,{recursive:true});
 async function compile(name,source){const js=ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ES2022}}).outputText.replaceAll("'./explosion-layout'","'./explosion-layout.mjs'").replaceAll("'./engine-data'","'./engine-data.mjs'").replaceAll("'./explosion-controller'","'./explosion-controller.mjs'").replaceAll("'./mechanical-engines'","'./mechanical-engines.mjs'");await writeFile(resolve(temp,name+'.mjs'),js);}
-for(const name of ['engine-data','explosion-layout','explosion-controller','mechanical-engines'])await compile(name,await readFile(`app/${name}.ts`,'utf8'));
-const scene=await readFile('app/engine-scene.tsx','utf8');
+for(const name of ['engine-data','explosion-layout','explosion-controller','mechanical-engines'])await compile(name,await readFile(`lib/engine/${name}.ts`,'utf8'));
+const scene=await readFile('components/engine/engine-scene.tsx','utf8');
 const builder=scene.slice(scene.indexOf('  function material'),scene.indexOf('  build(live.current.engine);'));
 await compile('fixture',`import * as T from 'three';import {getParts} from './engine-data';import {buildPistonEngine,buildRotaryEngine,buildShaftOutput} from './mechanical-engines';import {ExplosionController} from './explosion-controller';export function fixture(kind:string){
 let PARTS=getParts(kind),mechanism=null,mechanismTime=0,modelBounds=new T.Box3();const TAU=Math.PI*2,scene=new T.Scene();let root=new T.Group();scene.add(root);let groups:Record<string,T.Group>={},rotors:T.Group[]=[],picks:T.Object3D[]=[],materials:T.MeshStandardMaterial[]=[],labels:any[]=[],triangles=0;let explosion:ExplosionController|null=null;const clip=new T.Plane(new T.Vector3(0,-1,0),.15);let currentEngine='';const stats={current:()=>{}};const el={appendChild:()=>{}};const document={createElement:()=>({style:{setProperty:()=>{}},remove:()=>{},setAttribute:()=>{},lastChild:{textContent:'',style:{}},firstChild:{firstChild:{setAttribute:()=>{}}}})};${builder}\nbuild(kind);return{model:root,controller:explosion,rotors,groups,animate:(t)=>mechanism?.(t)};}`);
@@ -68,5 +68,5 @@ for(const engine of ['turbofan','turbojet','turboprop','turboshaft','v8','inline
  animate(.8);c.captureHome();c.layout({layout:'inventory',spacing:40,aspect:1,hidden:[],isolated:null,isolatedPiece:null});c.update(1);c.update(0);for(const p of c.pieces)closeMatrix(p.current,p.home);
  c.dispose();model.traverse(o=>{if(o instanceof T.Mesh)o.geometry.dispose();});
 }
-for(const path of ['app/page.tsx','app/engine-data.ts','app/engine-scene.tsx','app/globals.css'])assert.ok(!/[\u2013\u2014]|&mdash;|&#8212;/.test(await readFile(path,'utf8')),`${path} contains a long dash`);
+for(const path of ['app/page.tsx','lib/engine/engine-data.ts','components/engine/engine-scene.tsx','app/globals.css'])assert.ok(!/[\u2013\u2014]|&mdash;|&#8212;/.test(await readFile(path,'utf8')),`${path} contains a long dash`);
 console.log('Site text contains no em dashes or en dashes.');

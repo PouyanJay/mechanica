@@ -10,8 +10,12 @@ const eslintConfig = defineConfig([
     // Default ignores of eslint-config-next:
     ".next/**",
     "out/**",
-    "build/**",
     "next-env.d.ts",
+    // Project build output and tool caches.
+    "dist/**",
+    ".wrangler/**",
+    ".sites-runtime/**",
+    ".run-state/**",
   ]),
   {
     files: ["components/ui/**/*.{ts,tsx}", "hooks/use-mobile.ts"],

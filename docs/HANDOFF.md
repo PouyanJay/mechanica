@@ -2,7 +2,7 @@
 
 ## Provenance
 
-The seven-engine application was completed at commit d8977a252908095e4c665b9cfda33c7906340920. This handoff adds documentation, local command aliases, repository skills, and a source export script. An inherited CSS test was corrected to check unused utilities in the vendor source and actual app styles in compiled output, respecting Tailwind's demand-driven compilation. Engine geometry and interaction behavior are unchanged. EXPORT-MANIFEST.json records the exact packaged commit.
+The seven-engine application was completed at commit d8977a252908095e4c665b9cfda33c7906340920. This handoff adds documentation, local command aliases, repository skills, and a source export script. An inherited CSS test was corrected to check unused utilities in the vendor source and actual app styles in compiled output, respecting Tailwind's demand-driven compilation. Engine geometry and interaction behavior are unchanged. The export script writes an EXPORT-MANIFEST.json into each archive recording the packaged commit.
 
 The user supplied [Human Atlas](https://github.com/ashemag/human-atlas) as the interaction reference. Engine geometry and disassembly code were authored for Engine Atlas. No Human Atlas source or model assets are bundled.
 
@@ -20,7 +20,7 @@ These portable skills were newly authored for the handoff:
 | engine-explosion | Continuous slider, identity, exact reassembly, packing |
 | engine-validation | Numeric checks, compilation, visual review coverage |
 
-Each lives in .agents/skills/<name> with SKILL.md and agents/openai.yaml. AGENTS.md supplies shared guidance. They are instruction-based skills for a compatible coding agent, with no extra MCP or agent runtime required. They are not copies of the managed environment's skills.
+These skills and the shared agent guidance are kept as local, untracked files so the repository itself carries no agent tooling. They are instruction-based skills for a compatible coding agent, with no extra MCP or agent runtime required.
 
 ## Validation
 

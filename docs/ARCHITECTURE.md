@@ -2,7 +2,7 @@
 
 ## Data and rendering
 
-app/engine-data.ts defines EngineType, ENGINES, and getParts(engine). The page owns UI state. EngineScene owns Three.js objects, rendering, interaction, and cleanup. Turbine builders live in the scene module; mechanical-engines.ts supplies piston, rotary, and shaft-output builders.
+lib/engine/engine-data.ts defines EngineType, ENGINES, and getParts(engine). app/page.tsx owns UI state. EngineScene (components/engine/engine-scene.tsx) owns Three.js objects, rendering, interaction, and cleanup. Turbine builders live in the scene module; lib/engine/mechanical-engines.ts supplies piston, rotary, and shaft-output builders. lib/engine/explosion-controller.ts and lib/engine/explosion-layout.ts implement separation and packing.
 
 Component groups carry their IDs. Mesh metadata carries part IDs and useful piece names. Repeated hardware uses InstancedMesh where appropriate. ExplosionController gives each source instance a logical identity while batching rendered representations. Keep catalog and scene metadata aligned or picking, visibility, labels, and counts will diverge.
 
@@ -20,7 +20,7 @@ Piston motion maintains crank, connecting rod, and wrist-pin constraints with co
 
 ## Add an engine
 
-1. Add a stable engine key, catalog entry, and real component descriptions.
+1. Add a stable engine key, catalog entry, and real component descriptions in lib/engine/engine-data.ts.
 2. Add and register its geometry builder. Provide a distinct mechanism and useful piece names.
 3. Match the component list to nonempty scene groups. Integrate clipping, cutaway, labels, picking, bounds, and cleanup.
 4. Supply animation and capture current transforms correctly before separation.
