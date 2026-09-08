@@ -32,6 +32,8 @@ drag one slider from a fully assembled engine to every single bolt laid out on a
 
 [**▶ Open the live app**](https://mechanica-atlas.vercel.app) · no install, needs a WebGL2 browser
 
+[**🎬 Watch the 4K demo**](https://github.com/PouyanJay/mechanica/releases/download/v0.1.0/mechanica-demo-4k.mp4) · 100 seconds, narrated
+
 <img src="docs/assets/hero-separation.webp" alt="A turbofan engine in Mechanica, partially separated: the casing has lifted away and rings of fasteners hover around the fan, compressor, combustor and turbine stages" width="900" />
 
 </div>
