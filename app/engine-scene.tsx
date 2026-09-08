@@ -205,7 +205,7 @@ export default function EngineScene({state,onSelect,onStats}:Props){
    const ease=reducedMotion?1:1-Math.exp(-dt*7);
    progress=desired; if(desired!==previousSlider){layoutBlend=1;previousSlider=desired;}
    const inventoryVisible=s.mode==='exploded'||progress>0;
-   ex.root.visible=inventoryVisible;root.visible=!inventoryVisible;floor.visible=!inventoryVisible;grid.visible=!inventoryVisible;
+   ex.root.visible=inventoryVisible;root.visible=!inventoryVisible;floor.visible=!inventoryVisible;grid.visible=s.grid&&!inventoryVisible;
    const morphing=layoutBlend<1;layoutBlend=Math.min(1,layoutBlend+(reducedMotion?1:dt/.65));if(inventoryVisible&&(progress!==previousMatrixProgress||!inventoryWasVisible||morphing)){ex.update(progress,layoutBlend);previousMatrixProgress=progress;}
    inventoryWasVisible=inventoryVisible;
    if(s.mode==='exploded'){
