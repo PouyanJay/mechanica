@@ -177,19 +177,22 @@ export default function EngineScene({state,onSelect,onStats}:Props){
   let progress=0,prevMode='',prevAmount=-1,previousMatrixProgress=-1,inventoryWasVisible=false,previousSlider=-1;
   let goal:T.Vector3|null=null,targetGoal:T.Vector3|null=null;
   const reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  function overview(){const s=live.current;const size=modelBounds.getSize(new T.Vector3()),center=modelBounds.getCenter(new T.Vector3());const distance=Math.max(12,Math.max(size.y,size.x/Math.max(.4,camera.aspect))*1.9+size.z);goal=new T.Vector3(...(s.camera==='front'?[-1,.06,0]:s.camera==='side'?[0,.1,1]:[-.55,.36,.75]) as [number,number,number]).normalize().multiplyScalar(distance).add(center);targetGoal=center;}
+  // Half-height an orthographic camera needs to frame `bounds` when looking along `direction`. Projects the box corners onto the camera's right/up axes; world-axis extents under-fit oblique views.
+  function orthoHalf(bounds:T.Box3,direction:T.Vector3,aspect:number){const f=direction.clone().negate().normalize(),right=new T.Vector3().crossVectors(f,new T.Vector3(0,1,0)).normalize(),up=new T.Vector3().crossVectors(right,f).normalize(),center=bounds.getCenter(new T.Vector3());let hw=0,hh=0;for(let i=0;i<8;i++){const c=new T.Vector3(i&1?bounds.max.x:bounds.min.x,i&2?bounds.max.y:bounds.min.y,i&4?bounds.max.z:bounds.min.z).sub(center);hw=Math.max(hw,Math.abs(c.dot(right)));hh=Math.max(hh,Math.abs(c.dot(up)));}return Math.max(hh,hw/Math.max(.2,aspect),1)*1.07;}
+  function overview(){const s=live.current;const size=modelBounds.getSize(new T.Vector3()),center=modelBounds.getCenter(new T.Vector3());const distance=Math.max(12,Math.max(size.y,size.x/Math.max(.4,camera.aspect))*1.9+size.z);const dir=new T.Vector3(...(s.camera==='front'?[-1,.06,0]:s.camera==='side'?[0,.1,1]:s.camera==='ortho'?[-10,6.5,13.5]:[-.55,.36,.75]) as [number,number,number]).normalize();goal=dir.clone().multiplyScalar(distance).add(center);targetGoal=center;orthoHalfGoal=orthoHalf(modelBounds,dir,camera.aspect);}
   function fitExplosion(amount:number){
    if(!explosion)return;
-   const fit=explosion.fit(amount,camera.aspect);const size=fit.bounds.getSize(new T.Vector3());orthoHalfGoal=Math.max(size.y/2,size.x/(2*camera.aspect),1)*1.22;if(camera instanceof T.OrthographicCamera){camera.zoom=1;camera.updateProjectionMatrix();}
+   const fit=explosion.fit(amount,camera.aspect);if(camera instanceof T.OrthographicCamera){camera.zoom=1;camera.updateProjectionMatrix();}
    const inventory=live.current.explodeLayout==='inventory';
    const stage=inventory?T.MathUtils.clamp((amount-.3)/.5,0,1):0;const direction=new T.Vector3(-10,6.5,13.5).normalize().lerp(inventory?new T.Vector3(0,0,1):new T.Vector3(-.12,.32,1).normalize(),inventory?stage:1).normalize();
-   goal=fit.center.clone().addScaledVector(direction,fit.distance*(inventory?1:1.15));targetGoal=fit.center;
+   goal=fit.center.clone().addScaledVector(direction,fit.distance*(inventory?1:1.15));targetGoal=fit.center;orthoHalfGoal=orthoHalf(fit.bounds,direction,camera.aspect)*(inventory?1+.1*stage:1);
   }
   function animate(now:number){
    frame=requestAnimationFrame(animate);const dt=Math.min((now-last)/1000,.05);last=now;const s=live.current;
    if(s.engine!==currentEngine){build(s.engine);progress=0;prevReset=-1;prevSelected=null;prevMode='';layoutKey='';previousMatrixProgress=-1;}
    const ex=explosion!;
-   const needsOrtho=s.mode==='exploded'&&s.explodeLayout==='inventory';
+   // Orthographic projection is a user preset in Assembled/Cutaway and the fixed projection for the inventory layout in Explore.
+   const needsOrtho=(s.mode==='exploded'&&s.explodeLayout==='inventory')||(s.mode!=='exploded'&&s.camera==='ortho');
    if(needsOrtho!==(camera instanceof T.OrthographicCamera)){
     const old=camera;camera=needsOrtho?orthographic:perspective;camera.position.copy(old.position);camera.quaternion.copy(old.quaternion);camera.aspect=old.aspect;
     if(needsOrtho){const half=old.position.distanceTo(controls.target)*Math.tan(34*Math.PI/360);orthographic.top=half;orthographic.bottom=-half;orthographic.left=-half*camera.aspect;orthographic.right=half*camera.aspect;orthographic.zoom=1;}
@@ -205,7 +208,7 @@ export default function EngineScene({state,onSelect,onStats}:Props){
    const ease=reducedMotion?1:1-Math.exp(-dt*7);
    progress=desired; if(desired!==previousSlider){layoutBlend=1;previousSlider=desired;}
    const inventoryVisible=s.mode==='exploded'||progress>0;
-   ex.root.visible=inventoryVisible;root.visible=!inventoryVisible;floor.visible=!inventoryVisible;grid.visible=s.grid&&!inventoryVisible;
+   ex.root.visible=inventoryVisible;root.visible=!inventoryVisible;floor.visible=!inventoryVisible;grid.visible=s.grid&&!(s.mode==='exploded'&&s.explodeLayout==='inventory'&&progress>.3);
    const morphing=layoutBlend<1;layoutBlend=Math.min(1,layoutBlend+(reducedMotion?1:dt/.65));if(inventoryVisible&&(progress!==previousMatrixProgress||!inventoryWasVisible||morphing)){ex.update(progress,layoutBlend);previousMatrixProgress=progress;}
    inventoryWasVisible=inventoryVisible;
    if(s.mode==='exploded'){

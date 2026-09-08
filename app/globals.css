@@ -233,3 +233,6 @@ body{background:var(--page-bg);color:var(--ink)}
 .view-menu{min-width:140px;border-radius:12px;padding:6px;background:var(--glass-strong);border:1px solid var(--glass-border);backdrop-filter:blur(24px);box-shadow:var(--panel-shadow)}
 .view-menu [role=menuitemradio]{border-radius:8px;font-size:13px;padding:8px 10px 8px 28px;color:var(--ink-mid)}
 .view-menu [role=menuitemradio][data-state=checked]{color:var(--ink)}
+
+/* The canvas ends where the console begins, in every mode (console tops measured at 177 / 222 / 238 from the viewport bottom), so the fitted model is never hidden behind it */
+@media(min-width:1001px){.viewport .scene-host{bottom:190px}.viewport:has(.console-slider) .scene-host{bottom:236px}.viewport.is-exploded .scene-host,.viewport.is-exploded.has-selection .scene-host{bottom:252px}}
