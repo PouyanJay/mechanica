@@ -156,3 +156,56 @@ body{background:var(--page-bg);color:var(--ink)}
 .settings-quality{width:126px!important}
 .explosion-layout-select{background:var(--secondary)!important;color:var(--gold);border-color:var(--glass-border)!important}
 .explode-action{background:var(--secondary);border-color:var(--glass-border);color:var(--ink-mid)}
+/* ---- Restraint pass: spend borders, shadows and the accent by role ---- */
+:root{--panel-shadow:0 12px 40px rgba(0,0,0,.42)}
+[data-theme=light]{--panel-shadow:0 12px 36px rgba(25,40,60,.12)}
+/* One typeface. Numbers align as tabular figures; no monospace scatter. */
+.part-number,.model-label,.detail-header>span,.library-category,.view-orientation>span,.master-explode-heading output,.console-slider output{font-family:inherit;letter-spacing:0;text-transform:none;font-variant-numeric:tabular-nums}
+.sidebar-section-heading,.panel-title{letter-spacing:.02em;text-transform:none;font-size:12px}
+/* Chrome: chips and rails carry a shadow only; hairlines are reserved for the primary surfaces */
+.brand,.icon-button,.view-tools,.engine-picker,.is-exploded .view-orientation{border-color:transparent}
+.brand{font-weight:600;font-size:15px}
+.brand-light{font-weight:400}
+.icon-button{box-shadow:none;background:transparent}
+.icon-button:hover{background:var(--glass)}
+/* Sidebar: quieter rows, hover-revealed visibility toggles on pointer devices */
+@media(min-width:761px) and (min-height:481px){.panel-title{display:none}.parts-panel{padding-top:22px}}
+.engine-picker{padding:13px 12px;gap:12px}
+.engine-pick-icon,.engine-picker>svg{color:var(--ink-dim)}
+.sidebar-section-heading{padding:20px 10px 10px;border-top:0}
+.part-row{min-height:42px}
+.part-select{font-size:14px;padding:10px 8px}
+.part-number{font-size:12px;min-width:18px}
+@media(hover:hover){.part-row .part-eye{opacity:0;transition:opacity .15s}.part-row:hover .part-eye,.part-row.muted .part-eye,.part-row .part-eye:focus-visible{opacity:1}}
+.restore-all{color:var(--ink-mid)}
+/* Heading: one weight, one size, no eyebrow */
+.viewport-heading{top:24px}
+.viewport-heading h1{font-size:30px;font-weight:500;letter-spacing:-.02em;margin:0 0 6px}
+.viewport-heading p{font-size:13px}
+/* View row: quiet text buttons */
+.view-orientation button{font-size:12px;letter-spacing:0;padding:6px 9px}
+.view-orientation button.active{background:var(--glass);color:var(--ink)}
+.view-orientation>span{font-size:12px;margin-right:6px}
+/* Console: progressive disclosure, no inner dividers, accent only on the hero slider */
+.viewport:not(.is-exploded) .explosion-settings{display:none}
+.console-divider{display:none}
+.master-explode-heading label{font-size:14px;font-weight:500}
+.master-explode-heading output{color:var(--ink);font-size:13px}
+.play-button{color:var(--ink-mid)}
+.play-button:hover,.play-button.playing{color:var(--ink);background:var(--glass)}
+.mode-tabs [data-state=active]{background:var(--secondary)!important;color:var(--ink)!important;box-shadow:none!important}
+.mode-tabs [data-slot=tabs-trigger]{border-radius:8px}
+/* Cards and dialogs: fewer competing hues */
+.library-engine-icon,.help-row>svg{color:var(--ink-dim)}
+.library-engine{border-color:transparent}
+.library-engine:hover,.library-engine.chosen{border-color:var(--gold)}
+.library-category{font-size:12px;color:var(--ink-dim);margin:18px 0 6px}
+.detail-header>span{font-size:12px}
+.part-detail{border-radius:14px}
+.isolate-button{border-radius:8px}
+/* Phone: the console lost its endpoint captions and hides the layout row outside Explore, so the canvas takes the space back */
+@media(max-width:760px){.viewport:not(.is-exploded) .scene-host{bottom:262px}.viewport:not(.is-exploded).has-selection .scene-host{bottom:400px}.viewport:not(.is-exploded) .part-detail{bottom:190px}.viewport:not(.is-exploded) .view-orientation{bottom:266px}.viewport:not(.is-exploded):has(.console-slider) .scene-host{bottom:304px}.viewport:not(.is-exploded):has(.console-slider) .part-detail{bottom:232px}.viewport:not(.is-exploded):has(.console-slider) .view-orientation{bottom:308px}}
+@media(min-width:761px) and (min-height:481px){.parts-panel{align-self:flex-start;max-height:calc(100dvh - 130px);padding-bottom:16px}}
+.viewport:not(.is-exploded) .view-orientation{bottom:189px}
+.master-explode-heading output,.master-explode-heading output *{color:var(--ink-dim)}
+@media(max-width:760px){.viewport:not(.is-exploded) .part-detail{bottom:218px}.viewport:not(.is-exploded) .view-orientation{bottom:224px}.viewport:not(.is-exploded):has(.console-slider) .part-detail{bottom:260px}.viewport:not(.is-exploded):has(.console-slider) .view-orientation{bottom:266px}}
