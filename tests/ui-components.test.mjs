@@ -88,3 +88,24 @@ test("renders sidebar skeletons deterministically", async () => {
   assert.equal(first, second);
   assert.match(first, /--skeleton-width:70%/);
 });
+
+test("walkthrough stations announce their explanation and expose labeled navigation", async () => {
+  const { default: WalkthroughCard } = await vite.ssrLoadModule("/components/engine/walkthrough-card.tsx");
+  const props = {
+    station: { title: "Compress the charge", body: "The piston rises and compresses the mixture." },
+    componentNames: ["Pistons", "Connecting rods"],
+    total: 5, index: 0, playing: true,
+    onPrevious() {}, onNext() {}, onTogglePlaying() {}, onExit() {},
+  };
+  const first = renderToStaticMarkup(React.createElement(WalkthroughCard, props));
+  assert.match(first, /aria-live="polite" aria-atomic="true">[\s\S]*Compress the charge[\s\S]*The piston rises and compresses the mixture\.[\s\S]*Connecting rods/);
+  assert.match(first, /<button[^>]*disabled=""[^>]*aria-label="Previous station"/);
+  assert.match(first, /aria-label="Next station"/);
+  assert.match(first, /aria-label="Pause walkthrough"/);
+  assert.match(first, /aria-label="Exit walkthrough"/);
+  assert.match(first, /<progress[^>]*value="1" max="5"[^>]*aria-label="Walkthrough progress"/);
+  const last = renderToStaticMarkup(React.createElement(WalkthroughCard, { ...props, index: 4, playing: false }));
+  assert.match(last, /<button[^>]*disabled=""[^>]*aria-label="Next station"/);
+  assert.match(last, /aria-label="Play walkthrough"/);
+  assert.match(last, /Station 5 of 5/);
+});

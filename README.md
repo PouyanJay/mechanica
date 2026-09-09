@@ -60,6 +60,7 @@ to its exact captured pose, even if the mechanism was mid-rotation when you star
 
 ## What you can do
 
+- **Follow a guided walkthrough** from the console or Help. Step through the working fluid path or combustion cycle, read short explanations, and see the involved components highlighted. Arrow keys step, Space pauses, and Escape returns to exploration at the current view. The speed control sets the automatic pace.
 - **Inspect** any of seven engines. Pick a component group from the list or click it in the scene to read what it does, what it touches and what it is made of.
 - **Cut it open** with a section plane and a depth slider. Play the mechanism while it is sliced.
 - **Follow the air** through the turbine engines with a schematic streakline overlay: bypass, core, combustion and exhaust.

@@ -5,6 +5,8 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { getParts, EngineType, ENGINES, ViewerState } from '@/lib/engine/engine-data';
 import { buildPistonEngine, buildRotaryEngine, buildShaftOutput } from '@/lib/engine/mechanical-engines';
+import { WALKTHROUGHS } from '@/lib/engine/walkthroughs';
+import { fitWalkthroughCamera } from '@/lib/engine/walkthrough-camera';
 import { ExplosionController, PieceInfo } from '@/lib/engine/explosion-controller';
 
 type Props={state:ViewerState; onSelect:(id:string|null,piece?:PieceInfo|null)=>void; onStats:(total:number,visible:number)=>void};
@@ -171,6 +173,7 @@ export default function EngineScene({state,onSelect,onStats}:Props){
    const hits=ray.intersectObjects(picks,false);const hit=hits.find(h=>{let p:T.Object3D|null=h.object;while(p){if(!p.visible)return false;p=p.parent;}const m=(h.object as T.Mesh).material as T.MeshStandardMaterial;return !m.clippingPlanes?.length||clip.distanceToPoint(h.point)>=0;});select.current(hit?.object.userData.part??null,null);
   }
   renderer.domElement.addEventListener('pointerdown',pointerDown);renderer.domElement.addEventListener('pointerup',pointerUp);
+  let walkthroughKey='';
   let layoutKey='',fitRequested=true,layoutBlend=1,orthoHalfGoal=10,labelTick=0;
   const resize=()=>{const w=el.clientWidth,h=el.clientHeight;if(!w||!h)return;renderer.setSize(w,h);camera.aspect=w/h;orthographic.aspect=w/h;perspective.aspect=w/h;if(camera instanceof T.OrthographicCamera){camera.left=-camera.top*camera.aspect;camera.right=camera.top*camera.aspect;}camera.updateProjectionMatrix();layoutKey='';fitRequested=true;};const observer=new ResizeObserver(resize);observer.observe(el);resize();
   let frame=0,last=performance.now(),prevReset=-1,prevCamera='',prevZoom=0,prevQuality='',prevSelected:string|null=null,prevIsolation:string|null=null;
@@ -218,14 +221,24 @@ export default function EngineScene({state,onSelect,onStats}:Props){
    if(s.reset!==prevReset||s.camera!==prevCamera){if(s.mode==='exploded')fitExplosion(desired);else overview();prevReset=s.reset;prevCamera=s.camera;}
    if(s.zoom!==prevZoom){if(camera instanceof T.OrthographicCamera){camera.zoom*=s.zoom>prevZoom?1.22:.82;camera.updateProjectionMatrix();}else goal=camera.position.clone().sub(controls.target).multiplyScalar(s.zoom>prevZoom?.82:1.22).add(controls.target);prevZoom=s.zoom;}
    if(s.isolated!==prevIsolation){if(s.mode==='exploded'){fitExplosion(desired);}else if(s.isolated){const bounds=new T.Box3().setFromObject(groups[s.isolated]);const center=bounds.getCenter(new T.Vector3());targetGoal=center;goal=center.clone().add(new T.Vector3(-4,3,6));}else overview();prevIsolation=s.isolated;}
+   const station=s.walkthrough?WALKTHROUGHS[s.engine][s.walkthrough.station]:null;
+   const stationKey=station?`${s.engine}/${station.id}/${camera.aspect.toFixed(4)}`:'';
+   if(station&&stationKey!==walkthroughKey){
+    const fit=fitWalkthroughCamera(modelBounds,station.camera,camera.aspect);
+    goal=fit.position;targetGoal=fit.target;
+    if(station.mechanismAngle!==undefined){mechanismTime=station.mechanismAngle;mechanism?.(mechanismTime);}
+   }
+   if(!station&&walkthroughKey&&s.mode==='cutaway'){goal=null;targetGoal=null;}
+   walkthroughKey=stationKey;
    if(goal){camera.position.lerp(goal,ease);if(camera.position.distanceTo(goal)<.015)goal=null;}
    if(targetGoal){controls.target.lerp(targetGoal,ease);if(controls.target.distanceTo(targetGoal)<.015)targetGoal=null;}
    if(camera instanceof T.OrthographicCamera){camera.top=T.MathUtils.lerp(camera.top,orthoHalfGoal,ease);camera.bottom=-camera.top;camera.left=-camera.top*camera.aspect;camera.right=camera.top*camera.aspect;camera.updateProjectionMatrix();}
    clip.constant=s.mode==='cutaway'?T.MathUtils.lerp(modelBounds.min.y-.2,modelBounds.max.y+.2,s.section/100):100;floor.position.y=modelBounds.min.y-.2;grid.position.y=modelBounds.min.y-.22;
    for(const p of PARTS){const g=groups[p.id];g.visible=!s.hidden.includes(p.id)&&(!s.isolated||s.isolated===p.id);}
-   if(s.selected!==prevSelected){root.traverse(o=>{if(o instanceof T.Mesh){const m=o.material as T.MeshStandardMaterial;m.emissive.setHex(o.userData.part===s.selected?0xd39868:0);m.emissiveIntensity=o.userData.part===s.selected?.17:0;}});prevSelected=s.selected;}
-   if(s.playing&&!inventoryVisible){mechanismTime+=dt*s.speed;mechanism?.(mechanismTime);rotors.forEach((r,i)=>r.rotation.x+=dt*s.speed*(r.userData.rate??(i===0&&s.engine==='turbofan'?.7:1.1)));}
-   controls.autoRotate=s.spin&&!(s.mode==='exploded'&&s.explodeLayout==='inventory'&&progress>.3);controls.autoRotateSpeed=reducedMotion?0:1.2;controls.mouseButtons.LEFT=s.mode==='exploded'&&progress>.8&&s.explodeLayout==='inventory'?T.MOUSE.PAN:T.MOUSE.ROTATE;controls.touches.ONE=s.mode==='exploded'&&progress>.8&&s.explodeLayout==='inventory'?T.TOUCH.PAN:T.TOUCH.ROTATE;controls.update();flow.visible=s.flow&&ENGINES[s.engine].flow&&!inventoryVisible&&!s.isolated;
+   const selectedParts=s.selectedParts.length?s.selectedParts:s.selected?[s.selected]:[];const selectionKey=selectedParts.join('|');
+   if(selectionKey!==prevSelected){root.traverse(o=>{if(o instanceof T.Mesh){const m=o.material as T.MeshStandardMaterial;m.emissive.setHex(selectedParts.includes(o.userData.part)?0xd39868:0);m.emissiveIntensity=selectedParts.includes(o.userData.part)?.17:0;}});prevSelected=selectionKey;}
+   if(s.playing&&!s.walkthrough&&!inventoryVisible){mechanismTime+=dt*s.speed;mechanism?.(mechanismTime);rotors.forEach((r,i)=>r.rotation.x+=dt*s.speed*(r.userData.rate??(i===0&&s.engine==='turbofan'?.7:1.1)));}
+   controls.autoRotate=s.spin&&!s.walkthrough&&!(s.mode==='exploded'&&s.explodeLayout==='inventory'&&progress>.3);controls.autoRotateSpeed=reducedMotion?0:1.2;controls.mouseButtons.LEFT=s.mode==='exploded'&&progress>.8&&s.explodeLayout==='inventory'?T.MOUSE.PAN:T.MOUSE.ROTATE;controls.touches.ONE=s.mode==='exploded'&&progress>.8&&s.explodeLayout==='inventory'?T.TOUCH.PAN:T.TOUCH.ROTATE;controls.update();flow.visible=s.flow&&ENGINES[s.engine].flow&&!inventoryVisible&&!s.isolated;
    if(flow.visible){
     flowTime+=dt*(s.playing?Math.max(.6,s.speed):1);
     const fan=s.engine==='turbofan',power=s.engine==='turboprop'||s.engine==='turboshaft';
@@ -250,7 +263,7 @@ export default function EngineScene({state,onSelect,onStats}:Props){
    const W=el.clientWidth,H=el.clientHeight;const cN=modelBounds.getCenter(new T.Vector3()).project(camera);const cx=(cN.x*.5+.5)*W,cy=(-cN.y*.5+.5)*H;
    let bx0=Infinity,bx1=-Infinity,by0=Infinity,by1=-Infinity;for(let k=0;k<8;k++){const c=new T.Vector3(k&1?modelBounds.max.x:modelBounds.min.x,k&2?modelBounds.max.y:modelBounds.min.y,k&4?modelBounds.max.z:modelBounds.min.z).project(camera);if(c.z>=1)continue;const x=(c.x*.5+.5)*W,y=(-c.y*.5+.5)*H;bx0=Math.min(bx0,x);bx1=Math.max(bx1,x);by0=Math.min(by0,y);by1=Math.max(by1,y);}
    const boxes:{l:HTMLButtonElement;ax:number;ay:number;x:number;y:number;w:number;h:number}[]=[];
-   labels.forEach((l,i)=>{const p=PARTS[i],g=groups[p.id];const pos=(g.userData.anchor as T.Vector3).clone().project(camera);l.hidden=inventoryVisible||!s.labels||!g.visible||pos.z>1||pos.x<-.95||pos.x>.95||pos.y<-.9||pos.y>.9;l.classList.toggle('selected',s.selected===p.id);if(l.hidden)return;
+   labels.forEach((l,i)=>{const p=PARTS[i],g=groups[p.id];const pos=(g.userData.anchor as T.Vector3).clone().project(camera);l.hidden=inventoryVisible||!s.labels||!g.visible||pos.z>1||pos.x<-.95||pos.x>.95||pos.y<-.9||pos.y>.9;l.classList.toggle('selected',selectedParts.includes(p.id));if(l.hidden)return;
     const ax=(pos.x*.5+.5)*W,ay=(-pos.y*.5+.5)*H;l.style.left=ax+'px';l.style.top=ay+'px';
     const span=l.lastChild as HTMLElement,w=(span.offsetWidth||60)+2,h=20;
     let dx=ax-cx,dy=ay-cy;const len=Math.hypot(dx,dy)||1;dx/=len;dy=dy/len-.5;const n=Math.hypot(dx,dy)||1;dx/=n;dy/=n;

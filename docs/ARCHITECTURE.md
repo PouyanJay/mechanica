@@ -31,3 +31,17 @@ Piston motion maintains crank, connecting rod, and wrist-pin constraints with co
 ## Graphics
 
 Geometry, metallic materials, studio lighting, and shadows are implemented in code. No external GLB or texture library is missing from this export. Improve topology, silhouette, material response, and lighting in the source. If importing licensed CAD later, record its source, license, units, coordinate conventions, level of detail, and hierarchy.
+
+## Guided walkthroughs
+
+`lib/engine/walkthroughs.ts` defines ordered lessons for all seven engines and pure state transitions for entering, stepping, playing and leaving a lesson. Each station names catalog component IDs, has no more than three sentences, and supplies a camera position and target. Optional hidden group IDs expose internal mechanisms; rotary lessons remove the side housings so the rotor face is visible. Piston and rotary stations also supply an absolute crank or eccentric-shaft angle in radians, using the same input as the mechanical builders.
+
+The page owns the station index and playback timer. Auto-advance waits eight seconds at 1x speed; manual stepping pauses it, and the last station remains available for exploration. Dialogs suspend auto-advance. Starting clears separation, hiding and isolation, opens cutaway, and saves the airflow preference. Leaving restores airflow and retains selection, mechanism pose and the current camera position. Picking a component or changing the view mode also leaves the lesson.
+
+`selectedParts` extends ordinary selection to multiple component groups using the same emissive material treatment. A normal pick returns to single selection. `lib/engine/walkthrough-camera.ts` preserves a station's viewing direction while increasing distance enough to fit every model corner with a margin at the actual canvas aspect ratio. The scene applies the existing camera easing and respects reduced motion. It never rebuilds geometry on station changes.
+
+`components/engine/walkthrough-card.tsx` provides labeled controls and a polite, atomic live region. Desktop layouts reserve space beside the canvas; narrower layouts place the canvas, lesson and console in separate rows. Arrow keys step, Space toggles playback and Escape exits, while form controls and dialogs retain their own keyboard behavior.
+
+`npm run test:engines` checks lesson coverage, catalog references, copy length, playback boundaries, airflow restoration and camera framing against the real engine geometry at three aspect ratios, in addition to the existing mechanism and separation checks.
+
+For live Chromium checks, start the local server and run `PLAYWRIGHT_MODULE=/absolute/path/to/playwright/index.mjs node scripts/check-walkthrough-browser.mjs` using an existing Playwright installation and browser. `WALKTHROUGH_URL` overrides the default `http://localhost:5173`. `WALKTHROUGH_ARTIFACT_DIR` overrides the screenshot directory, which defaults to `mechanica-walkthrough` inside the system temporary directory. This optional check exercises all lessons, keyboard navigation, airflow restoration, speed and pause controls, and responsive layouts without adding a runtime dependency.

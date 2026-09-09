@@ -282,3 +282,60 @@ body{background:var(--page-bg);color:var(--ink)}
 @media(min-width:1001px){.viewport .scene-host{bottom:116px}.viewport:has(.console-slider) .scene-host{bottom:156px}.viewport.is-exploded .scene-host,.viewport.is-exploded.has-selection .scene-host{bottom:218px}}
 @media(max-width:760px){.viewport:not(.is-exploded) .scene-host{bottom:190px}.viewport:not(.is-exploded).has-selection .scene-host{bottom:330px}.viewport:not(.is-exploded) .part-detail{bottom:145px}.viewport:not(.is-exploded):has(.console-slider) .scene-host{bottom:230px}.viewport:not(.is-exploded):has(.console-slider) .part-detail{bottom:185px}.viewport.is-exploded .scene-host,.viewport.is-exploded.has-selection .scene-host{bottom:250px}.viewport.is-exploded .part-detail{bottom:247px}}
 @media(max-width:760px){.viewport:not(.is-exploded) .scene-host{bottom:145px}.viewport:not(.is-exploded).has-selection .scene-host{bottom:345px}.viewport:not(.is-exploded):has(.console-slider) .scene-host{bottom:185px}.viewport:not(.is-exploded).has-selection:has(.console-slider) .scene-host{bottom:385px}}
+
+/* Guided lessons reserve their own space beside or below the scene. */
+.walkthrough-card{position:absolute;top:98px;right:84px;width:310px;padding:18px 20px 16px;border:1px solid var(--glass-border);border-radius:16px;background:var(--glass-strong);backdrop-filter:blur(26px);box-shadow:var(--panel-shadow);color:var(--ink)}
+.walkthrough-header{display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--ink-dim);font-size:12px;margin-bottom:10px}
+.walkthrough-exit{display:grid;place-items:center;width:36px;height:36px;margin:-8px -8px -8px 0;border:0;border-radius:8px;color:var(--ink-mid);background:transparent}
+.walkthrough-exit:hover{color:var(--ink);background:var(--secondary)}
+.walkthrough-step{font-size:12px;color:var(--gold);font-variant-numeric:tabular-nums;margin-bottom:8px}
+.walkthrough-card h2{font-size:23px;font-weight:500;letter-spacing:-.025em;line-height:1.2;margin:0 0 12px}
+.walkthrough-station>p{font-size:14px;line-height:1.65;color:var(--ink-mid);margin:0 0 20px}
+.walkthrough-components>span{display:block;font-size:11px;color:var(--ink-dim);margin-bottom:8px}
+.walkthrough-components ul{display:flex;flex-wrap:wrap;gap:6px;padding:0;margin:0;list-style:none}
+.walkthrough-components li{padding:4px 7px;border-radius:5px;background:var(--secondary);color:var(--ink-mid);font-size:12px;line-height:1.35}
+.walkthrough-progress{display:block;appearance:none;border:0;width:100%;height:3px;margin:22px 0 14px;border-radius:3px;overflow:hidden;background:var(--muted);color:var(--gold)}
+.walkthrough-progress::-webkit-progress-bar{background:var(--muted)}
+.walkthrough-progress::-webkit-progress-value{background:var(--gold)}
+.walkthrough-progress::-moz-progress-bar{background:var(--gold)}
+.walkthrough-controls{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}
+.walkthrough-controls button{display:flex;align-items:center;justify-content:center;gap:4px;min-height:44px;padding:8px 5px;border:1px solid var(--glass-border);border-radius:8px;background:transparent;color:var(--ink-mid);font-size:13px}
+.walkthrough-controls button:hover:not(:disabled){background:var(--secondary);color:var(--ink)}
+.walkthrough-controls button:disabled{opacity:.35}
+.walkthrough-controls .walkthrough-play{background:var(--secondary);color:var(--ink)}
+.walkthrough-card .walkthrough-keyboard{font-size:10px;line-height:1.5;text-align:center;color:var(--ink-dim);margin:12px 0 0}
+.walkthrough-launch{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:36px;padding:8px 10px;border:1px solid var(--glass-border);border-radius:8px;background:var(--secondary);color:var(--ink);font-size:13px;white-space:nowrap}
+.walkthrough-launch:hover{background:var(--accent)}
+.walkthrough-active .canvas-hint{display:none}
+@media(min-width:1201px) and (min-height:721px){.atlas .workbench .viewport.walkthrough-active .scene-host{right:410px;top:120px;bottom:130px}.viewport.walkthrough-active .walkthrough-card{max-height:calc(100% - 224px);overflow:auto}}
+@media(max-width:1200px),(max-height:720px){
+  .workbench:has(.walkthrough-active){height:auto;min-height:calc(100dvh - 76px);align-items:flex-start}
+  .viewport.walkthrough-active{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:100px clamp(270px,45dvh,470px) auto auto 32px;gap:14px 0;overflow:visible;align-self:stretch}
+  .atlas .workbench .viewport.walkthrough-active .scene-host{position:relative;inset:auto;grid-row:2;min-width:0;width:100%;height:100%}
+  .viewport.walkthrough-active .walkthrough-card{position:relative;inset:auto;grid-row:3;width:auto;max-height:none;margin:0 20px}
+  .viewport.walkthrough-active .bottom-console{position:relative;inset:auto;grid-row:4;width:auto;transform:none;margin:0 20px;align-self:start}
+  .viewport.walkthrough-active .viewport-footer{position:relative;inset:auto;grid-row:5;align-self:start;margin:0 24px}
+  .viewport.walkthrough-active .walkthrough-station>p{margin-bottom:14px}
+  .viewport.walkthrough-active .walkthrough-progress{margin-top:16px}
+  .viewport.walkthrough-active .view-tools{top:112px}
+  .viewport.walkthrough-active .walkthrough-launch{grid-column:1/-1}
+}
+@media(max-width:760px){
+  .workbench:has(.walkthrough-active){min-height:calc(100dvh - 62px)}
+  .viewport.walkthrough-active{grid-template-rows:152px clamp(250px,38dvh,380px) auto auto 30px;gap:12px 0}
+  .viewport.walkthrough-active .walkthrough-card,.viewport.walkthrough-active .bottom-console{margin-left:13px;margin-right:13px}
+  .walkthrough-card{padding:16px}
+  .walkthrough-card h2{font-size:21px}
+  .walkthrough-keyboard{display:none}
+  .walkthrough-exit{min-width:44px;min-height:44px}
+  .console-main .walkthrough-launch{order:3;grid-column:1/-1}
+  .viewport:not(.walkthrough-active):not(.is-exploded) .scene-host{bottom:191px}
+  .viewport:not(.walkthrough-active):not(.is-exploded).has-selection .scene-host{bottom:391px}
+  .viewport:not(.walkthrough-active):not(.is-exploded):has(.console-slider) .scene-host{bottom:231px}
+  .viewport:not(.walkthrough-active):not(.is-exploded).has-selection:has(.console-slider) .scene-host{bottom:431px}
+  .viewport:not(.walkthrough-active).is-exploded .scene-host{bottom:296px}
+  .viewport:not(.walkthrough-active):not(.is-exploded) .part-detail{bottom:191px}
+  .viewport:not(.walkthrough-active):not(.is-exploded):has(.console-slider) .part-detail{bottom:231px}
+  .viewport:not(.walkthrough-active).is-exploded .part-detail{bottom:293px}
+}
+@media(max-height:480px) and (max-width:1000px){.viewport.walkthrough-active{grid-template-rows:88px 260px auto auto 10px}.viewport.walkthrough-active .view-tools{top:100px}.workbench:has(.walkthrough-active){min-height:calc(100dvh - 50px)}}

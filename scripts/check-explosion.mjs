@@ -6,15 +6,66 @@ import ts from 'typescript';
 import * as T from 'three';
 const temp=resolve('.sites-runtime/explosion-check');await mkdir(temp,{recursive:true});
 async function compile(name,source){const js=ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ES2022}}).outputText.replaceAll("'./explosion-layout'","'./explosion-layout.mjs'").replaceAll("'./engine-data'","'./engine-data.mjs'").replaceAll("'./explosion-controller'","'./explosion-controller.mjs'").replaceAll("'./mechanical-engines'","'./mechanical-engines.mjs'");await writeFile(resolve(temp,name+'.mjs'),js);}
-for(const name of ['engine-data','explosion-layout','explosion-controller','mechanical-engines'])await compile(name,await readFile(`lib/engine/${name}.ts`,'utf8'));
+for(const name of ['engine-data','explosion-layout','explosion-controller','mechanical-engines','walkthroughs','walkthrough-camera'])await compile(name,await readFile(`lib/engine/${name}.ts`,'utf8'));
 const scene=await readFile('components/engine/engine-scene.tsx','utf8');
 const builder=scene.slice(scene.indexOf('  function material'),scene.indexOf('  build(live.current.engine);'));
 await compile('fixture',`import * as T from 'three';import {getParts} from './engine-data';import {buildPistonEngine,buildRotaryEngine,buildShaftOutput} from './mechanical-engines';import {ExplosionController} from './explosion-controller';export function fixture(kind:string){
 let PARTS=getParts(kind),mechanism=null,mechanismTime=0,modelBounds=new T.Box3();const TAU=Math.PI*2,scene=new T.Scene();let root=new T.Group();scene.add(root);let groups:Record<string,T.Group>={},rotors:T.Group[]=[],picks:T.Object3D[]=[],materials:T.MeshStandardMaterial[]=[],labels:any[]=[],triangles=0;let explosion:ExplosionController|null=null;const clip=new T.Plane(new T.Vector3(0,-1,0),.15);let currentEngine='';const stats={current:()=>{}};const el={appendChild:()=>{}};const document={createElement:()=>({style:{setProperty:()=>{}},remove:()=>{},setAttribute:()=>{},lastChild:{textContent:'',style:{}},firstChild:{firstChild:{setAttribute:()=>{}}}})};${builder}\nbuild(kind);return{model:root,controller:explosion,rotors,groups,animate:(t)=>mechanism?.(t)};}`);
+const {ENGINES,getParts}=await import(pathToFileURL(resolve(temp,'engine-data.mjs')).href);
+const {WALKTHROUGHS,startWalkthrough,exitWalkthrough,stepWalkthrough,advanceWalkthrough}=await import(pathToFileURL(resolve(temp,'walkthroughs.mjs')).href);
+const {fitWalkthroughCamera}=await import(pathToFileURL(resolve(temp,'walkthrough-camera.mjs')).href);
+assert.deepEqual(Object.keys(WALKTHROUGHS).sort(),Object.keys(ENGINES).sort(),'Every engine needs a walkthrough');
+for(const [engine,stations] of Object.entries(WALKTHROUGHS)){
+ assert.ok(stations.length>=5,`${engine}: at least five stations`);
+ assert.equal(new Set(stations.map(s=>s.id)).size,stations.length,`${engine}: unique station ids`);
+ const parts=new Set(getParts(engine).map(p=>p.id));
+ for(const station of stations){
+  assert.ok(station.title&&station.body&&station.parts.length,`${engine}/${station.id}: complete station`);
+  assert.ok([...station.parts,...(station.hidden??[])].every(id=>parts.has(id)),`${engine}/${station.id}: unknown component`);
+  assert.ok(station.body.split(/[.!?]+/).filter(s=>s.trim()).length<=3,`${engine}/${station.id}: at most three sentences`);
+  assert.ok([...station.camera.position,...station.camera.target].every(Number.isFinite));
+  assert.ok(new T.Vector3(...station.camera.position).distanceTo(new T.Vector3(...station.camera.target))>0);
+  if(!ENGINES[engine].flow)assert.ok(Number.isFinite(station.mechanismAngle),'Mechanical stations need an absolute angle');
+ }
+ for(const previousFlow of [false,true]){
+  const initial={engine,flow:previousFlow,mode:'exploded',explode:85,cycling:true,playing:true,spin:true,hidden:[...parts],isolated:[...parts][0],isolatedPiece:'test',selectedPiece:'test',selectedParts:[],walkthrough:null};
+  const started=startWalkthrough(initial);
+  assert.equal(started.flow,ENGINES[engine].flow);assert.equal(started.explode,0);assert.deepEqual(started.hidden,stations[0].hidden??[]);assert.equal(started.isolatedPiece,null);assert.equal(started.playing,false);assert.equal(started.cycling,false);
+  const stepped=stepWalkthrough(started,1);assert.equal(stepped.walkthrough.station,1);assert.equal(stepped.walkthrough.playing,false);assert.deepEqual(stepped.selectedParts,stations[1].parts);
+  assert.equal(stepWalkthrough(started,-1).walkthrough.station,0);
+  assert.equal(stepWalkthrough(started,999).walkthrough.station,stations.length-1);
+  assert.equal(advanceWalkthrough(started).walkthrough.station,1);assert.equal(advanceWalkthrough(stepped),stepped);
+  let last=started;for(let i=0;i<stations.length;i++)last=advanceWalkthrough(last);
+  assert.equal(last.walkthrough.station,stations.length-1);assert.equal(last.walkthrough.playing,false);
+  const exited=exitWalkthrough(stepped);assert.equal(exited.flow,previousFlow);assert.equal(exited.walkthrough,null);assert.deepEqual(exited.selectedParts,stepped.selectedParts);assert.equal(exited.selected,stepped.selected);assert.equal(exited.camera,stepped.camera);
+  assert.equal(exitWalkthrough(startWalkthrough(stepped)).flow,previousFlow,'Restart retains original airflow preference');
+ }
+}
+console.log('Walkthrough catalogs, copy, stepping, playback boundaries and airflow restoration passed for all seven engines.');
 const {fixture}=await import(pathToFileURL(resolve(temp,'fixture.mjs')).href);
 function closeMatrix(a,b,epsilon=1e-6){for(let i=0;i<16;i++)assert.ok(Math.abs(a.elements[i]-b.elements[i])<epsilon,`matrix element ${i}: ${a.elements[i]} vs ${b.elements[i]}`);}
 for(const engine of ['turbofan','turbojet','turboprop','turboshaft','v8','inline4','rotary']){
  const {model,controller:c,rotors,groups,animate}=fixture(engine);
+ for(const station of WALKTHROUGHS[engine]){
+  if(station.mechanismAngle!==undefined)animate(station.mechanismAngle);
+  model.updateWorldMatrix(true,true);const bounds=new T.Box3().setFromObject(model);
+  for(const aspect of [.48,1,2.2]){
+   const fit=fitWalkthroughCamera(bounds,station.camera,aspect);
+   const index=WALKTHROUGHS[engine].indexOf(station);
+   const previous=fitWalkthroughCamera(bounds,WALKTHROUGHS[engine][Math.max(0,index-1)].camera,aspect);
+   const camera=new T.PerspectiveCamera(34,aspect,.1,3000);
+   for(const fraction of [0,.1,.25,.5,.75,.9,1]){
+   camera.position.lerpVectors(previous.position,fit.position,fraction);camera.lookAt(previous.target.clone().lerp(fit.target,fraction));camera.updateMatrixWorld();
+   for(let i=0;i<8;i++){
+    const corner=new T.Vector3(i&1?bounds.max.x:bounds.min.x,i&2?bounds.max.y:bounds.min.y,i&4?bounds.max.z:bounds.min.z).project(camera);
+    const limit=fraction===0||fraction===1?.80001:.95;
+    assert.ok(Math.abs(corner.x)<=limit&&Math.abs(corner.y)<=limit&&corner.z>-1&&corner.z<1,`${engine}/${station.id}: camera must frame the model at aspect ${aspect}`);
+   }
+   }
+  }
+ }
+ animate(0);
+ console.log(`${engine}: every walkthrough camera frames the model at desktop, square and phone aspect ratios.`);
  assert.ok(c.count>(engine==='rotary'?40:engine==='v8'||engine==='inline4'?150:1000),'Individual mechanical parts must be represented');for(const [id,group] of Object.entries(groups)){let count=0;group.traverse(o=>{if(o instanceof T.Mesh)count++;});assert.ok(count>0,`Empty component group: ${engine}/${id}`);}
  assert.equal(new Set(c.pieces.map(p=>p.id)).size,c.pieces.length,'Every instance has a stable, distinct identity');
  let cases=0;
@@ -56,17 +107,17 @@ for(const engine of ['turbofan','turbojet','turboprop','turboshaft','v8','inline
  console.log(`${engine}: ${c.count} independent pieces; ${cases} non-overlapping layouts; exact repeated reassembly; single-piece isolation passed.`);
  if(engine==='v8'||engine==='inline4'){
   const n=engine==='v8'?8:4;assert.equal(groups.pistons.children.length,n);assert.equal(groups.rods.children.length,n);
-  for(const theta of [0,.4,1.5,3.2,6.1,9.4]){animate(theta);model.updateWorldMatrix(true,true);
+  for(const theta of [0,.4,1.5,3.2,6.1,9.4,...WALKTHROUGHS[engine].map(s=>s.mechanismAngle)]){animate(theta);model.updateWorldMatrix(true,true);
    groups.rods.children.forEach((rod,i)=>{const big=new T.Vector3(0,-1.75/2,0).applyMatrix4(rod.matrixWorld),small=new T.Vector3(0,1.75/2,0).applyMatrix4(rod.matrixWorld);const wrist=groups.pistons.children[i].getWorldPosition(new T.Vector3());assert.ok(small.distanceTo(wrist)<1e-6,'Rod small end must follow wrist pin');assert.ok(Math.abs(big.distanceTo(small)-1.75)<1e-6);assert.ok(Math.abs(Math.hypot(big.y+.5,big.z)-.45)<1e-6,'Big end must follow crank throw');});
   }
   console.log(`${engine}: all ${n} piston linkages preserve rod length and crank throw throughout rotation.`);
  }
  if(engine==='rotary'){
-  for(const theta of [0,.6,2,4,6,9,13]){animate(theta);model.updateWorldMatrix(true,true);const motion=groups.seals.children[0],tips=motion.children.filter(o=>o.userData.pieceName==='Apex seal');assert.equal(tips.length,3);tips.forEach((tip,k)=>{const world=tip.getWorldPosition(new T.Vector3()),phi=theta/3+k/3*Math.PI*2;assert.ok(Math.abs(world.y-(1.55*Math.cos(phi)+.25*Math.cos(3*phi)))<1e-6);assert.ok(Math.abs(world.z-(1.55*Math.sin(phi)+.25*Math.sin(3*phi)))<1e-6);});assert.ok(Math.abs(groups.rotor.children[0].rotation.x-theta/3)<1e-8);}
+  for(const theta of [0,.6,2,4,6,9,13,...WALKTHROUGHS[engine].map(s=>s.mechanismAngle)]){animate(theta);model.updateWorldMatrix(true,true);const motion=groups.seals.children[0],tips=motion.children.filter(o=>o.userData.pieceName==='Apex seal');assert.equal(tips.length,3);tips.forEach((tip,k)=>{const world=tip.getWorldPosition(new T.Vector3()),phi=theta/3+k/3*Math.PI*2;assert.ok(Math.abs(world.y-(1.55*Math.cos(phi)+.25*Math.cos(3*phi)))<1e-6);assert.ok(Math.abs(world.z-(1.55*Math.sin(phi)+.25*Math.sin(3*phi)))<1e-6);});assert.ok(Math.abs(groups.rotor.children[0].rotation.x-theta/3)<1e-8);}
   console.log('rotary: apexes follow the housing locus and the output shaft rotates at 3:1.');
  }
  animate(.8);c.captureHome();c.layout({layout:'inventory',spacing:40,aspect:1,hidden:[],isolated:null,isolatedPiece:null});c.update(1);c.update(0);for(const p of c.pieces)closeMatrix(p.current,p.home);
  c.dispose();model.traverse(o=>{if(o instanceof T.Mesh)o.geometry.dispose();});
 }
-for(const path of ['app/page.tsx','lib/engine/engine-data.ts','components/engine/engine-scene.tsx','app/globals.css'])assert.ok(!/[\u2013\u2014]|&mdash;|&#8212;/.test(await readFile(path,'utf8')),`${path} contains a long dash`);
+for(const path of ['app/page.tsx','lib/engine/engine-data.ts','components/engine/engine-scene.tsx','app/globals.css','lib/engine/walkthroughs.ts','components/engine/walkthrough-card.tsx'])assert.ok(!/[\u2013\u2014]|&mdash;|&#8212;/.test(await readFile(path,'utf8')),`${path} contains a long dash`);
 console.log('Site text contains no em dashes or en dashes.');
