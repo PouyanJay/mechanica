@@ -1,3 +1,4 @@
+import { DEFAULT_SECTION_PLANE } from './section-plane';
 import { ENGINES, type EngineType, type ViewerState } from './engine-data';
 
 export type WalkthroughStation = {
@@ -77,7 +78,7 @@ export function enterStation(state: ViewerState, index: number): ViewerState {
 }
 
 export function startWalkthrough(state: ViewerState): ViewerState {
-  return enterStation({ ...state, mode: 'cutaway', section: 58, explode: 0, cycling: false, playing: false,
+  return enterStation({ ...state, mode: 'cutaway', section: 58, sectionPlane: { ...DEFAULT_SECTION_PLANE }, explode: 0, cycling: false, playing: false,
     hidden: [], isolated: null, isolatedPiece: null, selectedPiece: null, camera: 'perspective', spin: false,
     flow: ENGINES[state.engine].flow, walkthrough: { station: 0, playing: true, previousFlow: state.walkthrough?.previousFlow ?? state.flow } }, 0);
 }
