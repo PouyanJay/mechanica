@@ -109,3 +109,23 @@ test("walkthrough stations announce their explanation and expose labeled navigat
   assert.match(last, /aria-label="Play walkthrough"/);
   assert.match(last, /Station 5 of 5/);
 });
+
+test("cutaway controls preserve simple depth and label the full orientation ranges", async () => {
+  const { default: SectionControls } = await vite.ssrLoadModule("/components/engine/section-controls.tsx");
+  const { DEFAULT_SECTION_PLANE } = await vite.ssrLoadModule("/lib/engine/section-plane.ts");
+  const html = renderToStaticMarkup(React.createElement(SectionControls, {
+    depth: 52, plane: DEFAULT_SECTION_PLANE,
+    onDepthChange() {}, onPlaneChange() {}, onReset() {},
+  }));
+  assert.match(html, /<label[^>]*>Section depth<\/label>/);
+  assert.match(html, /type="range" role="slider" min="0" max="100" step="1"[^>]*aria-valuenow="52"/);
+  assert.match(html, /aria-expanded="false"[^>]*aria-controls="[^"]+"/);
+  assert.match(html, /aria-label="Cutting plane controls" hidden=""/);
+  assert.match(html, /min="-180" max="180" step="1"[^>]*aria-label="Yaw"/);
+  assert.match(html, /min="-90" max="90" step="1"[^>]*aria-label="Pitch"/);
+  for (const preset of ["Top", "Side", "Front", "Along axis"]) assert.match(html, new RegExp(`>${preset}</button>`));
+  assert.match(html, /aria-label="Reset cutting plane"/);
+  assert.match(html, /Flip cut side/);
+  assert.match(html, /type="checkbox"/);
+  assert.match(html, /Show cutting plane/);
+});

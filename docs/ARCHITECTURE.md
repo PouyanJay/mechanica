@@ -32,6 +32,20 @@ Piston motion maintains crank, connecting rod, and wrist-pin constraints with co
 
 Geometry, metallic materials, studio lighting, and shadows are implemented in code. No external GLB or texture library is missing from this export. Improve topology, silhouette, material response, and lighting in the source. If importing licensed CAD later, record its source, license, units, coordinate conventions, level of detail, and hierarchy.
 
+## Free-angle sections
+
+`lib/engine/section-plane.ts` defines the section orientation and presets. The existing numeric `section` field remains the 0 to 100 depth value; `sectionPlane` adds yaw, pitch, flip, guide visibility and whether the cut includes all hardware. Zero angles use exactly the original downward normal and depth formula. The simple default continues to open housings while leaving the mechanism intact. Rotating, choosing a preset or flipping enables a complete section through all components, including instances. Reset restores the simple section at 52 percent.
+
+Yaw covers a full revolution and pitch reaches both poles. Depth sweeps the box's projection onto the normal, including the original 0.2 unit endpoint margin. Flipping negates both the normal and constant, so it exchanges the retained half-space without moving the plane. The Along axis preset is an oblique longitudinal plane containing the engine's X axis.
+
+`lib/engine/section-rendering.ts` owns shared clipping planes and an interior-shading uniform. Materials get stable plane arrays once when their per-component materials are created. Changing section state updates plane coefficients and uniforms; it does not rebuild meshes or recompile materials. Free sections use matte back-face shading on double-sided materials to make exposed interiors readable. This is a visual section treatment, not generated cap geometry. Explore materials retain their own unclipped copies.
+
+The translucent guide and kept-side arrow live outside the engine root and cannot participate in picking, bounds or inventory counts. Their owned geometry and materials are disposed with the scene. Controls use labeled native range inputs, so a one-finger adjustment never reaches the canvas orbit handler. The expanded controls reserve canvas space; narrower screens put the model and controls in separate rows.
+
+Changing engines resets the section. Explore and Assembled disable it; returning to Cutaway restores it. Walkthrough entry resets the plane to its simple orientation so existing lessons keep their intended view. Mechanism and airflow animation remain independent of the plane.
+
+`npm run test:engines` verifies the default depth mapping, cardinal and oblique planes, full-bounds travel, exact flip, instance material coverage, unchanged home transforms and inventory counts. The optional live browser checks and performance comparison are documented in [FREE-ANGLE-CUTAWAYS.md](FREE-ANGLE-CUTAWAYS.md).
+
 ## Guided walkthroughs
 
 `lib/engine/walkthroughs.ts` defines ordered lessons for all seven engines and pure state transitions for entering, stepping, playing and leaving a lesson. Each station names catalog component IDs, has no more than three sentences, and supplies a camera position and target. Optional hidden group IDs expose internal mechanisms; rotary lessons remove the side housings so the rotor face is visible. Piston and rotary stations also supply an absolute crank or eccentric-shaft angle in radians, using the same input as the mechanical builders.

@@ -339,3 +339,60 @@ body{background:var(--page-bg);color:var(--ink)}
   .viewport:not(.walkthrough-active).is-exploded .part-detail{bottom:293px}
 }
 @media(max-height:480px) and (max-width:1000px){.viewport.walkthrough-active{grid-template-rows:88px 260px auto auto 10px}.viewport.walkthrough-active .view-tools{top:100px}.workbench:has(.walkthrough-active){min-height:calc(100dvh - 50px)}}
+
+/* Cutaway keeps its simple depth slider and reveals orientation on request. */
+.section-controls{order:1;min-width:0;border-radius:12px;background:rgba(127,127,127,.07)}
+.section-controls .console-slider{background:transparent;padding:7px 14px;gap:14px}
+.section-depth>label{min-width:104px;color:var(--ink-mid);font-size:13px}
+.section-controls input[type=range]{appearance:none;flex:1;min-width:0;width:100%;height:24px;margin:0;background:transparent;cursor:pointer;touch-action:none}
+.section-controls input[type=range]::-webkit-slider-runnable-track{height:3px;border-radius:3px;background:var(--muted)}
+.section-controls input[type=range]::-webkit-slider-thumb{appearance:none;width:15px;height:15px;border-radius:50%;margin-top:-6px;background:var(--gold);border:0}
+.section-controls input[type=range]::-moz-range-track{height:3px;border-radius:3px;background:var(--muted)}
+.section-controls input[type=range]::-moz-range-thumb{width:15px;height:15px;border-radius:50%;background:var(--gold);border:0}
+.section-controls input:focus-visible{outline:2px solid var(--gold);outline-offset:4px;border-radius:3px}
+.section-disclosure{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 11px 5px}
+.section-disclosure button{display:flex;align-items:center;gap:7px;min-height:30px;padding:4px;border:0;background:transparent;color:var(--ink-dim);font-size:12px;border-radius:5px}
+.section-disclosure button:hover{color:var(--ink);background:var(--secondary)}
+.section-expand[aria-expanded=true]{color:var(--ink)}
+.section-expand[aria-expanded=true]>svg:last-child{transform:rotate(180deg)}
+.section-advanced{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px 24px;padding:9px 14px 13px;border-top:1px solid var(--glass-border)}
+.section-advanced[hidden]{display:none}
+.section-presets{display:flex;gap:6px;grid-column:1/-1}
+.section-presets button,.section-flip{display:flex;align-items:center;justify-content:center;gap:7px;min-height:36px;padding:7px 13px;border:1px solid var(--glass-border);border-radius:7px;background:transparent;color:var(--ink-mid);font-size:12px}
+.section-presets button:hover,.section-flip:hover{background:var(--secondary);color:var(--ink)}
+.section-presets button[aria-pressed=true],.section-flip[aria-pressed=true]{background:var(--secondary);color:var(--gold)}
+.section-angle{display:flex;align-items:center;gap:12px;min-width:0;font-size:13px;color:var(--ink-mid)}
+.section-angle>span{min-width:34px}
+.section-angle output{min-width:40px;text-align:right;font-size:12px;color:var(--ink-dim);font-variant-numeric:tabular-nums}
+.section-actions{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.section-gizmo{display:flex;align-items:center;gap:8px;min-height:36px;font-size:12px;color:var(--ink-mid);cursor:pointer}
+.section-gizmo input{width:16px;height:16px;accent-color:var(--gold)}
+.section-guidance{grid-column:1/-1;font-size:12px;line-height:1.5;color:var(--ink-dim);margin:0}
+@media(min-width:1201px) and (min-height:801px){
+  .atlas .workbench .viewport:has(.section-controls) .scene-host{bottom:192px}
+  .atlas .workbench .viewport:has(.section-controls-expanded):has(.bottom-console) .scene-host{bottom:375px}
+}
+@media(max-width:1200px),(max-height:800px){
+  .workbench:has(.section-controls-expanded){height:auto;min-height:calc(100dvh - 76px);align-items:flex-start}
+  .viewport:has(.section-controls-expanded){display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:100px clamp(270px,45dvh,470px) auto auto 32px;gap:14px 0;overflow:visible;align-self:stretch}
+  .atlas .workbench .viewport:has(.bottom-console):has(.section-controls-expanded) .scene-host{position:relative;inset:auto;grid-row:2;min-width:0;width:100%;height:100%}
+  .viewport:has(.section-controls-expanded) .part-detail,.viewport:has(.section-controls-expanded) .walkthrough-card{position:relative;inset:auto;grid-row:3;width:auto;max-height:none;margin:0 20px}
+  .viewport:has(.section-controls-expanded) .bottom-console{position:relative;inset:auto;grid-row:4;width:auto;transform:none;margin:0 20px;align-self:start}
+  .viewport:has(.section-controls-expanded) .view-tools{top:112px}
+}
+@media(max-width:760px){
+  .section-advanced{grid-template-columns:minmax(0,1fr);gap:10px;padding:10px 12px 13px}
+  .section-presets button{flex:1;padding:8px 5px;min-height:40px}
+  .section-angle{min-height:40px}
+  .section-actions{gap:8px}
+  .section-controls input[type=range]::-webkit-slider-thumb{width:22px;height:22px;margin-top:-9.5px}
+  .section-controls input[type=range]::-moz-range-thumb{width:22px;height:22px}
+  .section-disclosure button{min-height:36px}
+  .viewport:not(.walkthrough-active):has(.section-controls):not(:has(.section-controls-expanded)) .scene-host{bottom:272px}
+  .viewport:not(.walkthrough-active).has-selection:has(.section-controls):not(:has(.section-controls-expanded)) .scene-host{bottom:472px}
+  .viewport:not(.walkthrough-active):has(.section-controls):not(:has(.section-controls-expanded)) .part-detail{bottom:272px}
+  .workbench:has(.section-controls-expanded){min-height:calc(100dvh - 62px)}
+  .viewport:has(.section-controls-expanded){grid-template-rows:152px clamp(250px,38dvh,380px) auto auto 30px;gap:12px 0}
+  .viewport:has(.section-controls-expanded) .part-detail,.viewport:has(.section-controls-expanded) .walkthrough-card,.viewport:has(.section-controls-expanded) .bottom-console{margin-left:13px;margin-right:13px}
+}
+@media(max-height:480px) and (max-width:1000px){.viewport:has(.section-controls-expanded){grid-template-rows:88px 260px auto auto 10px}.viewport:has(.section-controls-expanded) .view-tools{top:100px}.workbench:has(.section-controls-expanded){min-height:calc(100dvh - 50px)}}

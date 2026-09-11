@@ -5,12 +5,13 @@ import assert from 'node:assert/strict';
 import ts from 'typescript';
 import * as T from 'three';
 const temp=resolve('.sites-runtime/explosion-check');await mkdir(temp,{recursive:true});
-async function compile(name,source){const js=ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ES2022}}).outputText.replaceAll("'./explosion-layout'","'./explosion-layout.mjs'").replaceAll("'./engine-data'","'./engine-data.mjs'").replaceAll("'./explosion-controller'","'./explosion-controller.mjs'").replaceAll("'./mechanical-engines'","'./mechanical-engines.mjs'");await writeFile(resolve(temp,name+'.mjs'),js);}
-for(const name of ['engine-data','explosion-layout','explosion-controller','mechanical-engines','walkthroughs','walkthrough-camera'])await compile(name,await readFile(`lib/engine/${name}.ts`,'utf8'));
+async function compile(name,source){const js=ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ES2022}}).outputText.replaceAll("'./explosion-layout'","'./explosion-layout.mjs'").replaceAll("'./engine-data'","'./engine-data.mjs'").replaceAll("'./section-plane'","'./section-plane.mjs'").replaceAll("'./section-rendering'","'./section-rendering.mjs'").replaceAll("'./explosion-controller'","'./explosion-controller.mjs'").replaceAll("'./mechanical-engines'","'./mechanical-engines.mjs'");await writeFile(resolve(temp,name+'.mjs'),js);}
+for(const name of ['engine-data','explosion-layout','explosion-controller','mechanical-engines','walkthroughs','walkthrough-camera','section-plane','section-rendering'])await compile(name,await readFile(`lib/engine/${name}.ts`,'utf8'));
 const scene=await readFile('components/engine/engine-scene.tsx','utf8');
 const builder=scene.slice(scene.indexOf('  function material'),scene.indexOf('  build(live.current.engine);'));
-await compile('fixture',`import * as T from 'three';import {getParts} from './engine-data';import {buildPistonEngine,buildRotaryEngine,buildShaftOutput} from './mechanical-engines';import {ExplosionController} from './explosion-controller';export function fixture(kind:string){
-let PARTS=getParts(kind),mechanism=null,mechanismTime=0,modelBounds=new T.Box3();const TAU=Math.PI*2,scene=new T.Scene();let root=new T.Group();scene.add(root);let groups:Record<string,T.Group>={},rotors:T.Group[]=[],picks:T.Object3D[]=[],materials:T.MeshStandardMaterial[]=[],labels:any[]=[],triangles=0;let explosion:ExplosionController|null=null;const clip=new T.Plane(new T.Vector3(0,-1,0),.15);let currentEngine='';const stats={current:()=>{}};const el={appendChild:()=>{}};const document={createElement:()=>({style:{setProperty:()=>{}},remove:()=>{},setAttribute:()=>{},lastChild:{textContent:'',style:{}},firstChild:{firstChild:{setAttribute:()=>{}}}})};${builder}\nbuild(kind);return{model:root,controller:explosion,rotors,groups,animate:(t)=>mechanism?.(t)};}`);
+await compile('fixture',`import * as T from 'three';import {SectionRendering} from './section-rendering';import {getParts} from './engine-data';import {buildPistonEngine,buildRotaryEngine,buildShaftOutput} from './mechanical-engines';import {ExplosionController} from './explosion-controller';export function fixture(kind:string){
+let PARTS=getParts(kind),mechanism=null,mechanismTime=0,modelBounds=new T.Box3();const TAU=Math.PI*2,scene=new T.Scene();let root=new T.Group();scene.add(root);let groups:Record<string,T.Group>={},rotors:T.Group[]=[],picks:T.Object3D[]=[],materials:T.MeshStandardMaterial[]=[],labels:any[]=[],triangles=0;let explosion:ExplosionController|null=null;const clip=new T.Plane(new T.Vector3(0,-1,0),.15);const sectionRendering=new SectionRendering(clip);let currentEngine='';const stats={current:()=>{}};const el={appendChild:()=>{}};const document={createElement:()=>({style:{setProperty:()=>{}},remove:()=>{},setAttribute:()=>{},lastChild:{textContent:'',style:{}},firstChild:{firstChild:{setAttribute:()=>{}}}})};${builder}\nbuild(kind);return{model:root,controller:explosion,rotors,groups,sectionRendering,animate:(t)=>mechanism?.(t)};}`);
+const {DEFAULT_SECTION_PLANE,updateSectionPlane}=await import(pathToFileURL(resolve(temp,'section-plane.mjs')).href);
 const {ENGINES,getParts}=await import(pathToFileURL(resolve(temp,'engine-data.mjs')).href);
 const {WALKTHROUGHS,startWalkthrough,exitWalkthrough,stepWalkthrough,advanceWalkthrough}=await import(pathToFileURL(resolve(temp,'walkthroughs.mjs')).href);
 const {fitWalkthroughCamera}=await import(pathToFileURL(resolve(temp,'walkthrough-camera.mjs')).href);
@@ -45,7 +46,48 @@ console.log('Walkthrough catalogs, copy, stepping, playback boundaries and airfl
 const {fixture}=await import(pathToFileURL(resolve(temp,'fixture.mjs')).href);
 function closeMatrix(a,b,epsilon=1e-6){for(let i=0;i<16;i++)assert.ok(Math.abs(a.elements[i]-b.elements[i])<epsilon,`matrix element ${i}: ${a.elements[i]} vs ${b.elements[i]}`);}
 for(const engine of ['turbofan','turbojet','turboprop','turboshaft','v8','inline4','rotary']){
- const {model,controller:c,rotors,groups,animate}=fixture(engine);
+ const {model,controller:c,rotors,groups,animate,sectionRendering}=fixture(engine);
+ const originalMatrices=c.pieces.map(p=>p.home.clone());
+ const originalCount=c.count;
+ const sectionBounds=new T.Box3().setFromObject(model);
+ const corners=Array.from({length:8},(_,i)=>new T.Vector3(i&1?sectionBounds.max.x:sectionBounds.min.x,i&2?sectionBounds.max.y:sectionBounds.min.y,i&4?sectionBounds.max.z:sectionBounds.min.z));
+ const clipMaterials=new Set();let instanceBatches=0;
+ model.traverse(o=>{if(o instanceof T.Mesh){clipMaterials.add(o.material);assert.equal(o.material.clippingPlanes.length,1);if(o instanceof T.InstancedMesh)instanceBatches++;}});
+ assert.ok(instanceBatches>0||engine==='v8'||engine==='inline4'||engine==='rotary');
+ for(const depth of [0,10,52,58,100]){
+  sectionRendering.update(sectionBounds,depth,DEFAULT_SECTION_PLANE,true);
+  assert.deepEqual(sectionRendering.plane.normal.toArray(),[0,-1,0]);
+  assert.equal(sectionRendering.plane.constant,T.MathUtils.lerp(sectionBounds.min.y-.2,sectionBounds.max.y+.2,depth/100),'The default depth mapping must be exactly unchanged');
+  assert.equal(sectionRendering.hardwarePlane.constant,1e6,'Simple sections preserve uncut internal hardware');
+ }
+ const orientations=[[0,0],[90,0],[0,-90],[0,90],[180,0],[-180,0],[0,-45],[37,-23],[-119,61],[168,-78],[-63,11]];
+ for(const [yaw,pitch] of orientations)for(const depth of [0,20,52,80,100]){
+  const state={...DEFAULT_SECTION_PLANE,yaw,pitch,free:true};
+  sectionRendering.update(sectionBounds,depth,state,true);
+  const plane=sectionRendering.plane;
+  assert.ok(Math.abs(plane.normal.length()-1)<1e-12&&Number.isFinite(plane.constant));
+  assert.deepEqual(sectionRendering.hardwarePlane.normal.toArray(),plane.normal.toArray());
+  assert.equal(sectionRendering.hardwarePlane.constant,plane.constant,'All instanced hardware uses the same effective section');
+  if(depth===0)assert.ok(corners.every(p=>plane.distanceToPoint(p)<0),'Zero depth removes the entire projected model');
+  if(depth===100)assert.ok(corners.every(p=>plane.distanceToPoint(p)>0),'Full depth retains the entire projected model');
+  const before=plane.clone();
+  sectionRendering.update(sectionBounds,depth,{...state,flipped:true},true);
+  for(const point of corners)assert.ok(Math.abs(plane.distanceToPoint(point)+before.distanceToPoint(point))<1e-10,'Flip exchanges half-spaces without moving the plane');
+  for(const point of corners){
+   const start=updateSectionPlane(new T.Plane(),sectionBounds,0,state),end=updateSectionPlane(new T.Plane(),sectionBounds,100,state);
+   const d=-start.distanceToPoint(point)/(end.constant-start.constant)*100;
+   assert.ok(d>=0&&d<=100);
+   const through=updateSectionPlane(new T.Plane(),sectionBounds,d,state);
+   assert.ok(Math.abs(through.distanceToPoint(point))<1e-10,'Every bound corner is reachable along the normal');
+  }
+ }
+ sectionRendering.update(sectionBounds,42,{...DEFAULT_SECTION_PLANE,yaw:51,pitch:28,free:true},false);
+ assert.equal(sectionRendering.interior.value,0);assert.equal(sectionRendering.plane.constant,1e6);assert.equal(sectionRendering.hardwarePlane.constant,1e6);
+ assert.ok(c.batches.every(batch=>batch.material.clippingPlanes.length===0),'Explore inventory never inherits the section');
+ assert.equal(c.count,originalCount);c.pieces.forEach((p,i)=>closeMatrix(p.home,originalMatrices[i]));
+ model.updateWorldMatrix(true,true);model.traverse(o=>assert.ok(o.matrixWorld.elements.every(Number.isFinite)));
+ sectionRendering.update(sectionBounds,52,DEFAULT_SECTION_PLANE,true);
+ console.log(`${engine}: free sections cover the full bounds, flip exactly, clip hardware, preserve home matrices and disable in Explore.`);
  for(const station of WALKTHROUGHS[engine]){
   if(station.mechanismAngle!==undefined)animate(station.mechanismAngle);
   model.updateWorldMatrix(true,true);const bounds=new T.Box3().setFromObject(model);
@@ -119,5 +161,5 @@ for(const engine of ['turbofan','turbojet','turboprop','turboshaft','v8','inline
  animate(.8);c.captureHome();c.layout({layout:'inventory',spacing:40,aspect:1,hidden:[],isolated:null,isolatedPiece:null});c.update(1);c.update(0);for(const p of c.pieces)closeMatrix(p.current,p.home);
  c.dispose();model.traverse(o=>{if(o instanceof T.Mesh)o.geometry.dispose();});
 }
-for(const path of ['app/page.tsx','lib/engine/engine-data.ts','components/engine/engine-scene.tsx','app/globals.css','lib/engine/walkthroughs.ts','components/engine/walkthrough-card.tsx'])assert.ok(!/[\u2013\u2014]|&mdash;|&#8212;/.test(await readFile(path,'utf8')),`${path} contains a long dash`);
+for(const path of ['app/page.tsx','lib/engine/engine-data.ts','components/engine/engine-scene.tsx','app/globals.css','lib/engine/walkthroughs.ts','components/engine/walkthrough-card.tsx','components/engine/section-controls.tsx','lib/engine/section-plane.ts','lib/engine/section-rendering.ts'])assert.ok(!/[\u2013\u2014]|&mdash;|&#8212;/.test(await readFile(path,'utf8')),`${path} contains a long dash`);
 console.log('Site text contains no em dashes or en dashes.');

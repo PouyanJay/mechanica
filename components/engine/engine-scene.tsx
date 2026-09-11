@@ -5,6 +5,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { getParts, EngineType, ENGINES, ViewerState } from '@/lib/engine/engine-data';
 import { buildPistonEngine, buildRotaryEngine, buildShaftOutput } from '@/lib/engine/mechanical-engines';
+import { SectionRendering, SectionGizmo } from '@/lib/engine/section-rendering';
 import { WALKTHROUGHS } from '@/lib/engine/walkthroughs';
 import { fitWalkthroughCamera } from '@/lib/engine/walkthrough-camera';
 import { ExplosionController, PieceInfo } from '@/lib/engine/explosion-controller';
@@ -30,7 +31,7 @@ export default function EngineScene({state,onSelect,onStats}:Props){
   const grid=new T.Mesh(new T.PlaneGeometry(60,60),new T.ShaderMaterial({transparent:true,depthWrite:false,vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:'varying vec2 vUv;void main(){vec2 p=(vUv-.5)*60.;vec2 g=abs(fract(p+.5)-.5)/fwidth(p);float line=1.-min(min(g.x,g.y),1.);float fade=1.-smoothstep(3.,13.,length(p));gl_FragColor=vec4(vec3(.55,.6,.66),line*fade*.3);}'}));grid.rotation.x=-Math.PI/2;grid.position.y=-2.72;scene.add(grid);
   let root=new T.Group();scene.add(root);let groups:Record<string,T.Group>={},rotors:T.Group[]=[],picks:T.Object3D[]=[],materials:T.MeshStandardMaterial[]=[],labels:HTMLButtonElement[]=[];
   let explosion:ExplosionController|null=null;let PARTS=getParts(live.current.engine);let mechanism:((time:number)=>void)|null=null,mechanismTime=0;let modelBounds=new T.Box3();
-  const clip=new T.Plane(new T.Vector3(0,-1,0),.15);let currentEngine='';let triangles=0;
+  const clip=new T.Plane(new T.Vector3(0,-1,0),.15);const sectionRendering=new SectionRendering(clip);let currentEngine='';let triangles=0;
   function material(color:number,rough=.33,metal=.88,clipped=false){const m=new T.MeshStandardMaterial({color,roughness:rough,metalness:metal,side:T.DoubleSide,clippingPlanes:clipped?[clip]:[]});m.userData.base=new T.Color(color);materials.push(m);return m;}
   function mesh(g:T.BufferGeometry,m:T.Material,parent:T.Object3D){const o=new T.Mesh(g,m);o.castShadow=true;o.receiveShadow=true;parent.add(o);triangles+=(g.index?.count??g.attributes.position.count)/3;return o;}
   // Surface of revolution around X. The profile is [axial position, radius].
@@ -48,7 +49,7 @@ export default function EngineScene({state,onSelect,onStats}:Props){
   function blades(parent:T.Group,x:number,inner:number,outer:number,count:number,chord:number,m:T.Material,rotating:boolean,sweep=.15,twist=.7){const group=new T.Group();group.position.x=x;parent.add(group);if(rotating)rotors.push(group);const geo=blade(inner,outer,chord,sweep,twist);const batch=new T.InstancedMesh(geo,m,count);const mat=new T.Matrix4();for(let i=0;i<count;i++){mat.makeRotationX(i/count*TAU);batch.setMatrixAt(i,mat);}batch.userData.pieceName=rotating?'Rotor blade':'Stator vane';batch.userData.inventoryFlat=true;batch.castShadow=true;batch.receiveShadow=true;group.add(batch);triangles+=(geo.index?.count??0)/3*count;return group;}
   function bolts(parent:T.Group,x:number,r:number,count:number,m:T.Material){const g=new T.CylinderGeometry(.042,.042,.065,6);g.rotateZ(Math.PI/2);const b=new T.InstancedMesh(g,m,count),mat=new T.Matrix4();for(let i=0;i<count;i++){const a=i/count*TAU;mat.makeTranslation(x,Math.sin(a)*r,Math.cos(a)*r);b.setMatrixAt(i,mat);}b.userData.pieceName='Fastener';parent.add(b);}
   function pipe(points:T.Vector3[],r:number,m:T.Material,parent:T.Object3D){const o=mesh(new T.TubeGeometry(new T.CatmullRomCurve3(points),32,r,8,false),m,parent);o.userData.pieceName='Tube';o.userData.inventoryFlat=true;return o;}
-  function clearModel(){mechanism=null;mechanismTime=0;if(explosion){scene.remove(explosion.root);explosion.dispose();explosion=null;}root.traverse(o=>{if(o instanceof T.Mesh)o.geometry.dispose();});materials.forEach(m=>m.dispose());scene.remove(root);labels.forEach(l=>l.remove());root=new T.Group();scene.add(root);groups={};rotors=[];picks=[];materials=[];labels=[];triangles=0;}
+  function clearModel(){mechanism=null;mechanismTime=0;if(explosion){scene.remove(explosion.root);explosion.dispose();explosion=null;}root.traverse(o=>{if(o instanceof T.Mesh)o.geometry.dispose();});materials.forEach(m=>{m.clippingPlanes=[];m.dispose();});scene.remove(root);labels.forEach(l=>l.remove());root=new T.Group();scene.add(root);groups={};rotors=[];picks=[];materials=[];labels=[];triangles=0;}
   function build(kind:EngineType){clearModel();PARTS=getParts(kind);const fan=kind==='turbofan',power=kind==='turboprop'||kind==='turboshaft';
    PARTS.forEach(p=>{const g=new T.Group();g.userData.id=p.id;g.userData.explode=(p.x*.32);root.add(g);groups[p.id]=g;const l=document.createElement('button');l.className='model-label';l.innerHTML='<svg aria-hidden="true"><polyline/></svg><span></span>';(l.lastChild as HTMLElement).textContent=p.short;l.setAttribute('aria-label',p.short);l.onclick=()=>select.current(p.id);l.style.setProperty('--part-color',p.color);el!.appendChild(l);labels.push(l);});
    if(kind==='v8'||kind==='inline4')mechanism=buildPistonEngine(kind,{groups,clip,materials});
@@ -83,9 +84,10 @@ export default function EngineScene({state,onSelect,onStats}:Props){
    [-2.4,-.2,.7,2.2,3.75].forEach((x,i)=>{const r=[1.3,1.17,1.15,1.14,1.09][i];ring(x,r,.06,shellDark,casing);bolts(casing,x,r,40,shellDark);});
    for(let i=0;i<8;i++){const a=i/8*TAU+.1,pts=[-.4,.3,1.1,2,2.5].map((x,j)=>new T.Vector3(x,Math.sin(a)*[1.22,1.2,1.28,1.24,1.17][j],Math.cos(a)*[1.22,1.2,1.28,1.24,1.17][j]));pipe(pts,.018,shellDark,casing);}
    }
-   const partMaterials=new Map<string,T.MeshStandardMaterial>();root.traverse(o=>{if(o instanceof T.Mesh){let p:T.Object3D|null=o;while(p&&!p.userData.id)p=p.parent;o.userData.part=p?.userData.id;const source=o.material as T.MeshStandardMaterial;const key=o.userData.part+source.uuid;let local=partMaterials.get(key);if(!local){local=source.clone();local.clippingPlanes=source.clippingPlanes;partMaterials.set(key,local);materials.push(local);}o.material=local;picks.push(o);}});root.updateWorldMatrix(true,true);modelBounds.setFromObject(root);for(const group of Object.values(groups)){const bounds=new T.Box3().setFromObject(group);group.userData.anchor=bounds.getCenter(new T.Vector3());}currentEngine=kind;explosion=new ExplosionController(root);scene.add(explosion.root);stats.current(explosion.count,explosion.count);
+   const partMaterials=new Map<string,T.MeshStandardMaterial>();root.traverse(o=>{if(o instanceof T.Mesh){let p:T.Object3D|null=o;while(p&&!p.userData.id)p=p.parent;o.userData.part=p?.userData.id;const source=o.material as T.MeshStandardMaterial;const key=o.userData.part+source.uuid;let local=partMaterials.get(key);if(!local){local=source.clone();sectionRendering.configureMaterial(local,!!source.clippingPlanes?.length);partMaterials.set(key,local);materials.push(local);}o.material=local;picks.push(o);}});root.updateWorldMatrix(true,true);modelBounds.setFromObject(root);for(const group of Object.values(groups)){const bounds=new T.Box3().setFromObject(group);group.userData.anchor=bounds.getCenter(new T.Vector3());}currentEngine=kind;explosion=new ExplosionController(root);scene.add(explosion.root);stats.current(explosion.count,explosion.count);
   }
   build(live.current.engine);
+  const sectionGizmo=new SectionGizmo();scene.add(sectionGizmo.root);
   // Airflow is a schematic visualization, not a fluid simulation: comet-like
   // streaklines advance through the engine stations (intake, compression,
   // combustion, jet) with station-based speed, rotor swirl, turbulence jitter
@@ -170,12 +172,12 @@ export default function EngineScene({state,onSelect,onStats}:Props){
    if(Math.hypot(e.clientX-down[0],e.clientY-down[1])>5)return;
    const b=renderer.domElement.getBoundingClientRect();pointer.set((e.clientX-b.left)/b.width*2-1,-(e.clientY-b.top)/b.height*2+1);ray.setFromCamera(pointer,camera);
    if(explosion?.root.visible){const hit=explosion.pick(ray);select.current(hit?.part??null,hit);return;}
-   const hits=ray.intersectObjects(picks,false);const hit=hits.find(h=>{let p:T.Object3D|null=h.object;while(p){if(!p.visible)return false;p=p.parent;}const m=(h.object as T.Mesh).material as T.MeshStandardMaterial;return !m.clippingPlanes?.length||clip.distanceToPoint(h.point)>=0;});select.current(hit?.object.userData.part??null,null);
+   const hits=ray.intersectObjects(picks,false);const hit=hits.find(h=>{let p:T.Object3D|null=h.object;while(p){if(!p.visible)return false;p=p.parent;}const m=(h.object as T.Mesh).material as T.MeshStandardMaterial;return !m.clippingPlanes?.length||m.clippingPlanes.every(plane=>plane.distanceToPoint(h.point)>=0);});select.current(hit?.object.userData.part??null,null);
   }
   renderer.domElement.addEventListener('pointerdown',pointerDown);renderer.domElement.addEventListener('pointerup',pointerUp);
-  let walkthroughKey='';
+  let walkthroughKey='',sectionNeedsFit=true;
   let layoutKey='',fitRequested=true,layoutBlend=1,orthoHalfGoal=10,labelTick=0;
-  const resize=()=>{const w=el.clientWidth,h=el.clientHeight;if(!w||!h)return;renderer.setSize(w,h);camera.aspect=w/h;orthographic.aspect=w/h;perspective.aspect=w/h;if(camera instanceof T.OrthographicCamera){camera.left=-camera.top*camera.aspect;camera.right=camera.top*camera.aspect;}camera.updateProjectionMatrix();layoutKey='';fitRequested=true;};const observer=new ResizeObserver(resize);observer.observe(el);resize();
+  const resize=()=>{const w=el.clientWidth,h=el.clientHeight;if(!w||!h)return;renderer.setSize(w,h);camera.aspect=w/h;orthographic.aspect=w/h;perspective.aspect=w/h;if(camera instanceof T.OrthographicCamera){camera.left=-camera.top*camera.aspect;camera.right=camera.top*camera.aspect;}camera.updateProjectionMatrix();layoutKey='';fitRequested=true;sectionNeedsFit=true;};const observer=new ResizeObserver(resize);observer.observe(el);resize();
   let frame=0,last=performance.now(),prevReset=-1,prevCamera='',prevZoom=0,prevQuality='',prevSelected:string|null=null,prevIsolation:string|null=null;
   let progress=0,prevMode='',prevAmount=-1,previousMatrixProgress=-1,inventoryWasVisible=false,previousSlider=-1;
   let goal:T.Vector3|null=null,targetGoal:T.Vector3|null=null;
@@ -230,10 +232,21 @@ export default function EngineScene({state,onSelect,onStats}:Props){
    }
    if(!station&&walkthroughKey&&s.mode==='cutaway'){goal=null;targetGoal=null;}
    walkthroughKey=stationKey;
+   // Opening controls or resizing a phone can narrow the canvas. Keep a free
+   // section in view using the current viewing direction, without resetting orbit.
+   if(s.mode==='cutaway'&&s.sectionPlane.free&&!s.walkthrough){
+    if(sectionNeedsFit){
+     const bounds=s.isolated?new T.Box3().setFromObject(groups[s.isolated]):modelBounds;
+     const fit=fitWalkthroughCamera(bounds,{position:(goal??camera.position).toArray() as [number,number,number],target:(targetGoal??controls.target).toArray() as [number,number,number]},camera.aspect);
+     goal=fit.position;targetGoal=fit.target;
+     if(camera instanceof T.OrthographicCamera)orthoHalfGoal=orthoHalf(bounds,fit.position.clone().sub(fit.target).normalize(),camera.aspect)*camera.zoom;
+     sectionNeedsFit=false;
+    }
+   }else sectionNeedsFit=true;
    if(goal){camera.position.lerp(goal,ease);if(camera.position.distanceTo(goal)<.015)goal=null;}
    if(targetGoal){controls.target.lerp(targetGoal,ease);if(controls.target.distanceTo(targetGoal)<.015)targetGoal=null;}
    if(camera instanceof T.OrthographicCamera){camera.top=T.MathUtils.lerp(camera.top,orthoHalfGoal,ease);camera.bottom=-camera.top;camera.left=-camera.top*camera.aspect;camera.right=camera.top*camera.aspect;camera.updateProjectionMatrix();}
-   clip.constant=s.mode==='cutaway'?T.MathUtils.lerp(modelBounds.min.y-.2,modelBounds.max.y+.2,s.section/100):100;floor.position.y=modelBounds.min.y-.2;grid.position.y=modelBounds.min.y-.22;
+   sectionRendering.update(modelBounds,s.section,s.sectionPlane,s.mode==='cutaway');sectionGizmo.update(clip,modelBounds,s.mode==='cutaway'&&s.sectionPlane.showGizmo);floor.position.y=modelBounds.min.y-.2;grid.position.y=modelBounds.min.y-.22;
    for(const p of PARTS){const g=groups[p.id];g.visible=!s.hidden.includes(p.id)&&(!s.isolated||s.isolated===p.id);}
    const selectedParts=s.selectedParts.length?s.selectedParts:s.selected?[s.selected]:[];const selectionKey=selectedParts.join('|');
    if(selectionKey!==prevSelected){root.traverse(o=>{if(o instanceof T.Mesh){const m=o.material as T.MeshStandardMaterial;m.emissive.setHex(selectedParts.includes(o.userData.part)?0xd39868:0);m.emissiveIntensity=selectedParts.includes(o.userData.part)?.17:0;}});prevSelected=selectionKey;}
@@ -284,7 +297,7 @@ export default function EngineScene({state,onSelect,onStats}:Props){
   const onControlStart=()=>{goal=null;targetGoal=null;};controls.addEventListener('start',onControlStart);
   frame=requestAnimationFrame(animate);setReady(true);
   const contextLost=(e:Event)=>{e.preventDefault();setError('The graphics connection was interrupted. Reload the page to restore the engine.');};renderer.domElement.addEventListener('webglcontextlost',contextLost);
-  return()=>{cancelAnimationFrame(frame);observer.disconnect();controls.dispose();renderer.domElement.removeEventListener('pointerdown',pointerDown);renderer.domElement.removeEventListener('pointerup',pointerUp);renderer.domElement.removeEventListener('webglcontextlost',contextLost);labels.forEach(l=>l.remove());if(explosion){scene.remove(explosion.root);explosion.dispose();}scene.traverse(o=>{if(o instanceof T.Mesh||o instanceof T.LineSegments||o instanceof T.Points){o.geometry.dispose();const ms=Array.isArray(o.material)?o.material:[o.material];ms.forEach(m=>m.dispose());}});materials.forEach(m=>m.dispose());env.dispose();renderer.dispose();renderer.domElement.remove();};
+  return()=>{cancelAnimationFrame(frame);observer.disconnect();controls.dispose();renderer.domElement.removeEventListener('pointerdown',pointerDown);renderer.domElement.removeEventListener('pointerup',pointerUp);renderer.domElement.removeEventListener('webglcontextlost',contextLost);labels.forEach(l=>l.remove());if(explosion){scene.remove(explosion.root);explosion.dispose();}scene.traverse(o=>{if(o instanceof T.Mesh||o instanceof T.Line||o instanceof T.Points){o.geometry.dispose();const ms=Array.isArray(o.material)?o.material:[o.material];ms.forEach(m=>m.dispose());}});materials.forEach(m=>{m.clippingPlanes=[];m.dispose();});env.dispose();renderer.dispose();renderer.domElement.remove();};
  },[]);
  return <div className="scene-host" ref={host}>{!ready&&!error&&<div className="viewer-message"><span className="loading-orbit"/>Preparing engine geometry</div>}{error&&<div className="viewer-message error" role="alert">{error}<button onClick={()=>location.reload()}>Reload viewer</button></div>}</div>;
 }
